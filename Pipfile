@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+scikit-learn = "*"
+matplotlib = "*"
+numpy = "*"
+pandas = "*"
+mlflow = "*"
+ipykernel = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
