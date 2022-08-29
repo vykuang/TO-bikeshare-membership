@@ -1,4 +1,6 @@
-# End to End ML Deployment
+# TO Bikeshare Membership 
+
+End-to-end ML deployment of a model predicting whether a trip record belongs to a member or a casual rider.
 
 1. Bikeshare ridership data - given these features:
     * ride start time
