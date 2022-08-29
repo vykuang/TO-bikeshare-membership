@@ -5,13 +5,19 @@ name = "pypi"
 
 [packages]
 scikit-learn = "*"
-matplotlib = "*"
 numpy = "*"
 pandas = "*"
-mlflow = "*"
-ipykernel = "*"
+mlflow = "~=1.26.0"
+python-dotenv = "*"
+hyperopt = "*"
+boto3 = "*"
 
 [dev-packages]
+black = "*"
+pylint = "*"
+isort = "*"
+ipykernel = "*"
+matplotlib = "*"
 
 [requires]
 python_version = "3.9"
