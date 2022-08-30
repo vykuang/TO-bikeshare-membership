@@ -63,7 +63,7 @@ def run(data_path, num_trials):
         return {"loss": inv_roc_auc, "status": STATUS_OK}
 
     search_space = {
-        "n_estimators": scope.int(hp.quniform("n_estimators", 10, 50, 1)),
+        "n_estimators": scope.int(hp.quniform("n_estimators", 10, 100, 1)),
         "max_depth": scope.int(hp.quniform("max_depth", 1, 20, 1)),
         "min_samples_split": scope.int(hp.quniform("min_samples_split", 2, 10, 1)),
         "min_samples_leaf": scope.int(hp.quniform("min_samples_leaf", 1, 4, 1)),
@@ -93,6 +93,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--max_evals",
+        type=int,
         default=10,
         help="the number of parameter evaluations for the optimizer to explore.",
     )

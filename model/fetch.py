@@ -5,14 +5,15 @@ If invoked from terminal, takes in year and output_path as parameters
 
 import argparse
 import json
-import requests
 from pathlib import Path
+
+import requests
 
 # Toronto Open Data is stored in a CKAN instance. It's APIs are documented here:
 # https://docs.ckan.org/en/latest/api/
 
 # To hit our API, you'll be making requests to:
-BASE_URL = 'https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action/'
+BASE_URL = "https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action/"
 # Datasets are called "packages". Each package can contain many "resources"
 # To retrieve the metadata for this package and its resources, use the package name in this page's URL:
 
@@ -20,20 +21,25 @@ BASE_URL = 'https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action/'
 # https://ckan0.cf.opendata.inter.prod-toronto.ca/dataset/7e876c24-177c-4605-9cef-e50dd74c617f/resource/98b63ba7-24ba-41da-a788-1c28d21a39d1/download/bikeshare-ridership-2017.zip
 # {BASE_CKAN_URL}/dataset/<package_id>/resource/<resource_id>/download/<file_name.type>
 
-def get_package_metadata(api_url: str = 'package_show', pkg_id: str ='bike-share-toronto-ridership-data'):   
 
-    params = {'id': pkg_id}
+def get_package_metadata(
+    api_url: str = "package_show", pkg_id: str = "bike-share-toronto-ridership-data"
+):
+
+    params = {"id": pkg_id}
     package = requests.get(BASE_URL + api_url, params=params).json()
     return package
+
 
 # with open('pkg_list.json', 'w') as f_out:
 #     json.dump(package, f_out)
 def parse_years(years: str):
-    years_list = years.split(',')
+    years_list = years.split(",")
     # raise ValueError if non-year values are given
     years_list = [year for year in years_list if year.isnumeric()]
 
     return set(years_list)
+
 
 def make_path(output_path: Path):
     if not output_path.exists:
@@ -42,10 +48,12 @@ def make_path(output_path: Path):
     else:
         return False
 
+
 def is_year_present(name: list, years):
     """regex to match year: 20[0-9]{2}($|-)"""
     present = [part in years for part in name]
     return any(present)
+
 
 def run(years, output_path):
     years = parse_years(years)
@@ -55,23 +63,26 @@ def run(years, output_path):
     for idx, resource in enumerate(package["result"]["resources"]):
 
         # To download the first non datastore_active resource :
-        name_split = resource['name'].split('-')
+        name_split = resource["name"].split("-")
         if not resource["datastore_active"] and is_year_present(name_split, years):
-            res_url = resource['url']
+            res_url = resource["url"]
             with requests.get(res_url, stream=True) as resource_dump_data:
                 resource_dump_data.raise_for_status()
-            # how to convert dump_data to .zip?
+                # how to convert dump_data to .zip?
                 fname = f"""{resource['name']}.{resource['format'].lower()}"""
                 file_path = Path(output_path / fname)
                 if not file_path.exists():
-                    print(f'Requesting from {res_url}')
-                    with open(file_path, 'wb') as file:
-                        print(f'Writing to {file_path}')
-                        for chunk in resource_dump_data.iter_content(chunk_size=512 * 1024):
+                    print(f"Requesting from {res_url}")
+                    with open(file_path, "wb") as file:
+                        print(f"Writing to {file_path}")
+                        for chunk in resource_dump_data.iter_content(
+                            chunk_size=512 * 1024
+                        ):
                             file.write(chunk)
                 else:
-                    print(f'Already exists: {file_path}')
+                    print(f"Already exists: {file_path}")
             # resource_urls.append(res_url)
+
 
 if __name__ == "__main__":
 
