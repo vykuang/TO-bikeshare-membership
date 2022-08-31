@@ -6,3 +6,8 @@ disable = [
     "trailing-newlines",
     "trailing-whitespace",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src",
+]

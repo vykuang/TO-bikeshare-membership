@@ -5,13 +5,14 @@
 # 	echo ${LOCAL_TAG} ${LOCAL_IMG_NAME}
 # 	sleep 1
 # 	echo ${LOCAL_IMG_NAME}
-# test:
-# 	pytest tests/
+test:
+	pytest tests/
 
-quality_checks: 
+quality_checks: test
 	isort .
 	black .
 	pylint --recursive=y .
+
 
 # build: quality_checks test
 # 	docker build -t ${LOCAL_IMG_NAME} .

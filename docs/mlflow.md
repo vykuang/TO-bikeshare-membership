@@ -20,8 +20,22 @@ Side note maybe I don't need binarizer. Just map it in a apply/lambda within `pr
 
 ## Setup
 
-Initialize MLflow backend. We already have a backend server on AWS EC2.
-Can set as env var `MLFLOW_TRACKING_URI`
+Initialize MLflow backend. We already have a backend server on AWS EC2, set with
+
+```bash
+mlflow server \
+    --host 0.0.0.0 --port ${MLFLOW_TRACKING_PORT} \
+    --backend-store-uri postgresql://${MLFLOW_DB_USER}:${MLFLOW_DB_PASSWORD}@${MLFLOW_DB_ENDPOINT}:${MLFLOW_DB_PORT}/${MLFLOW_DB_NAME} \
+    --default-artifact-root s3://${MLFLOW_BUCKET}
+```
+
+* --host 0.0.0.0 allows the tracking server to be accessed from other machines (listens on all addresses)
+* --port sets the tracking server access port
+* All option for backend store URI is set up when configuring the AWS RDS postgres instance
+* MLflow bucket is self-explanatory
+* The EC2 instance running the tracking server must have permission to access S3 and RDS resources
+
+Can set as env var `MLFLOW_TRACKING_URI=<EC2_IP>/<TRACKING_PORT>`
 
 ```python
 import mlflow
@@ -80,3 +94,10 @@ def run(data_path, num_trials):
 Perhaps initiate a local run before pushing to remote?
 
 No just go straight to remote.
+
+## Workflow
+
+1. Preprocess
+2. Train and log results to remote MLflow server via `trials.py`
+3. Search for best performing model (minimum inverse roc_auc), register the best model, transition to production, and archive existing model via `registry.py`
+4. Retrieve the latest registered model in production by searching for the latest versions of our model name, and looking for the one model in `Production` stage with `retrieve.py`
