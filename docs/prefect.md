@@ -6,6 +6,22 @@ Some basic questions to be answered
 * Should I have a separate `flow.py` that invokes scripts from my `models/` dir, one that has the `@task` and `@flow` decorators? This way I don't change the existing code, and retain the option to run it manually without prefect.
 * Should I try scheduling a basic flow for testing? Yes. Let's try with `preprocess`.
 
+## Setup
+
+* Server - let's not have another EC2 instance. I'll be using the free tier offered by Prefect Cloud
+    * Create API Key pair after logging in
+    * `prefect cloud login --key <generated_key>` to activate profile
+        * `prefect profile ls` to view profiles
+        * `use` to activate one of those profile
+    * Create a *Workspace* to organize flows on web UI (no API to create workspace?)
+        * Never mind - free tier provides only one workspace
+    * `prefect cloud workspace set --workspace "${email_without_punctuation}/${existing_workspace_name}"`
+    * Set up storage and block? Maybe I'll leave that in code
+    * CLI can also set up via `prefect block register -f <my_block.py>`???
+        * `create s3` only gives you a link to the UI so you can make it there instead
+
+
+
 ## Deployment
 
 Deployment is how prefect refers to scheduling the flow, or triggering via API call. Deployment is what takes the script from manual calls to *API-managed entities.*
