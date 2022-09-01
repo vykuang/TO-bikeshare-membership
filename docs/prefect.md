@@ -6,6 +6,23 @@ Some basic questions to be answered
 * Should I have a separate `flow.py` that invokes scripts from my `models/` dir, one that has the `@task` and `@flow` decorators? This way I don't change the existing code, and retain the option to run it manually without prefect.
 * Should I try scheduling a basic flow for testing? Yes. Let's try with `preprocess`.
 
+## Refresh
+
+[Docs here](https://docs.prefect.io/concepts/deployments/)
+
+* Our code are referred to as *flows*
+* We define and create *Deployment* which specifies
+    * what's packaged with the flow
+    * scheduling
+    * API trigger
+    * Storage, remote or local
+    * Infra in which the flow will run
+* Prefect API manages the workflow
+* Prefect agent pulls flows from queue and runs them, on the specified infra:
+    * requirements.txt
+    * docker network config
+    * etc.
+
 ## Setup
 
 * Server - let's not have another EC2 instance. I'll be using the free tier offered by Prefect Cloud
@@ -45,7 +62,11 @@ Code from mlops-zoomcamp used `DeploymentSpec` to define deployment. That is now
 
 [Docs here](https://docs.prefect.io/api-ref/prefect/deployments/)
 
-#### Storage
+The `.prefectignore` is placed not in the flow's current director, but in project home, which is `~/to-bikes` in our case.
+
+Work queue should also be created and assigned here, to organize our flows, and have agents dedicated to specific queues.
+
+### Storage
 
 Stores the flow code for deployments. Uses the concept of *Blocks*. Define a block to be our S3 bucket. Note that default is local filesystem.
 
@@ -69,4 +90,24 @@ deployment = Deployment.build_from_flow(
 
 In the CLI, it would be `--storage-block s3/example-block`. Doesn't make much sense to me? Mmmmh no Okay I see it.
 
-Can I look for this block before trying to make it? Maybe the wrong question. The `.save()` only creates a block *configuration* to be used. Could set overwrite to False too, so that if a block with the same name exists, it doesn't get overwritten.
+Can I look for this block before trying to make it? Maybe the wrong question. The `.save()` only creates a block *configuration* to be used. Could set overwrite to False too, so that if a block with the same name exists, it doesn't get overwritten. Need to use `try except ValueError` block if it already exists.
+
+### Agent and Work queues
+
+When a flow is deployed, it is submitted to a specific *work queue*. Agents in the *execution environment* polls that work queue for new flows to execute.
+
+To orchestrate with prefect, an agent needs to run and poll a work queue.
+
+In the execution environment, `prefect agent start "my-queue"` will start the agent, and poll the API given by `PREFECT_API_URL`. For us that points to my prefect cloud endpoint, but if I ran `prefect orion start` on an AWS EC2 instance, it would be `<external_ip>:<port>`.
+
+If we configure a remote instance to act as agent, and install the project dependencies, we wouldn't need to pass the `infrastructure` arg to Deployment. This would be a very basic setup.
+
+Work queues are mostly managed by prefect automatically. Set in deployment and agent start so that they match. Think of it as a pub/sub topic.
+
+## Testing
+
+Couldn't run the `flow_deploy.py` from CLI without getting ensnarled by Import Error, so used pytest. After adding the *mandatory* `.prefectignore`, apparently it copies the entire project directory into the storage block. The path of the storage block is also relative to the project home, so by setting it as `./prefect_block` I now have `to-bikes/prefect_block`. Hmm.
+
+If I try testing with `tmp_path`, because I've already created the `local` block and set overwrite False, no new block gets created, and existing block does not have its directory updated, and so remains `./prefect_block` in my home directory.
+
+Making blocks doesn't lend itself well to testing, but loading it is okay.

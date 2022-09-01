@@ -6,13 +6,19 @@
 # 	sleep 1
 # 	echo ${LOCAL_IMG_NAME}
 test:
+	pytest --version
 	pytest tests/
 
 quality_checks: test
-	isort .
-	black .
-	pylint --recursive=y .
+	isort --version
+	isort src/
+	black --version
+	black src/
+	pylint --version
+	pylint src/
 
+ci:  quality_checks
+	pre-commit
 
 # build: quality_checks test
 # 	docker build -t ${LOCAL_IMG_NAME} .

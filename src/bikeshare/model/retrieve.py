@@ -3,7 +3,6 @@ Retrieves and runs thee latest version of the registered model
 """
 import os
 from pathlib import Path
-from pprint import pprint
 
 import mlflow.pyfunc
 from dotenv import load_dotenv

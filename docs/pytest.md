@@ -45,3 +45,6 @@ However this actually defeats the whole point of having `src` because `pytest` *
 
 But if my package isn't meant to be installed, does it still make sense? In the end, I'm deploying my model as a web application, not a library. Is there a different way?
 
+## Outdated tests
+
+Seeing some cases where pytest is testing an older snapshot files that's already been modified. I need to save and close those files.

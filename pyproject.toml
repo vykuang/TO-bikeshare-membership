@@ -2,6 +2,7 @@
 
 disable = [
     "missing-function-docstring",
+    "missing-module-docstring",
     "missing-final-newline",
     "trailing-newlines",
     "trailing-whitespace",
@@ -10,4 +11,8 @@ disable = [
 [tool.pytest.ini_options]
 pythonpath = [
   "src",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "prefect",
 ]

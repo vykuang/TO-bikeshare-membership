@@ -2,7 +2,7 @@ from pathlib import Path
 
 from prefect import flow, get_run_logger, task
 
-from ..model.preprocess import preprocess, read_df
+from .preprocess import preprocess, read_df
 
 
 @task
