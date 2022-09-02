@@ -37,8 +37,6 @@ Some basic questions to be answered
     * CLI can also set up via `prefect block register -f <my_block.py>`???
         * `create s3` only gives you a link to the UI so you can make it there instead
 
-
-
 ## Deployment
 
 Deployment is how prefect refers to scheduling the flow, or triggering via API call. Deployment is what takes the script from manual calls to *API-managed entities.*
@@ -92,6 +90,60 @@ In the CLI, it would be `--storage-block s3/example-block`. Doesn't make much se
 
 Can I look for this block before trying to make it? Maybe the wrong question. The `.save()` only creates a block *configuration* to be used. Could set overwrite to False too, so that if a block with the same name exists, it doesn't get overwritten. Need to use `try except ValueError` block if it already exists.
 
+### Blocks
+
+Storage uses *Blocks* as its underlying structure. Enables storage of configs and allows interface for interacting with external sys.
+
+More interestingly they take on the `xcom` role in Airflow of allowing data transfer between tasks in a flow:
+
+```py
+from prefect.blocks.system import JSON
+
+# instantiate
+json_block = JSON(value={"the_answer": 42})
+
+# save
+json_block.save(name="life-the-universe-everything")
+
+# load
+@flow
+def what_is_the_answer():
+    json_block = JSON.load("life-the-universe-everything")
+    print(json_block.value["the_answer"])
+
+what_is_the_answer() # 42
+```
+
+Can also save encrypted secrets (e.g. AWS credentials) in a `SecretStr` block, so that those values are not exposed even if the block object is logged:
+
+```py
+from typing import Optional
+
+from prefect.blocks.core import Block
+from pydantic import SecretStr
+
+class AWSCredentials(Block):
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[SecretStr] = None
+    aws_session_token: Optional[str] = None
+    profile_name: Optional[str] = None
+    region_name: Optional[str] = None
+aws_credentials_block = AWSCredentials(
+    aws_access_key_id="AKIAJKLJKLJKLJKLJKLJK",
+    aws_secret_access_key="secret_access_key"
+)
+print(aws_credentials_block)
+# aws_access_key_id='AKIAJKLJKLJKLJKLJKLJK' 
+# aws_secret_access_key=SecretStr('**********') 
+# aws_session_token=None 
+# profile_name=None 
+# region_name=None
+```
+
+When we define `storage` for deployments, we're defining a *file system block* object
+
+Delete block with `prefect block delete <FILESYSTYPE>/<BLOCK_NAME>`, where FILESYSTYPE could be s3, local, etc. View with `prefect block ls`.
+
 ### Agent and Work queues
 
 When a flow is deployed, it is submitted to a specific *work queue*. Agents in the *execution environment* polls that work queue for new flows to execute.
@@ -103,6 +155,30 @@ In the execution environment, `prefect agent start "my-queue"` will start the ag
 If we configure a remote instance to act as agent, and install the project dependencies, we wouldn't need to pass the `infrastructure` arg to Deployment. This would be a very basic setup.
 
 Work queues are mostly managed by prefect automatically. Set in deployment and agent start so that they match. Think of it as a pub/sub topic.
+
+### Agent Infra
+
+What does it need?
+
+* Poll prefect cloud (set API and work-queue env var)
+* Fetch flow code from S3 block (S3 read)
+* Fetch data (S3 read)
+* Retrieve model from MLflow registry (S3 read)
+* Preprocess and write to intermediate storage (S3 write)
+* Fetch from intermediate model and train
+* Register model back to MLflow artifact store (S3 write)
+
+Requirements
+
+* prefect
+* boto3
+* all reqs of model training
+    * sklearn
+    * mlflow, etc.
+
+Elephant in the room - I need a way to put all the bikeshare data onto the S3 bucket.
+
+Okay let's put one up, and run a dockerized agent locally
 
 ## Testing
 

@@ -1,8 +1,14 @@
 .env
-.*
+
 Makefile
 Pipfile*
 *.md
 *.toml
 docs/
 tests/
+data/
+
+# meta info
+__pycache__/
+.pre-commit*
+.git*

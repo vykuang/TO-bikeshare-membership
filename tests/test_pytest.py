@@ -1,9 +1,5 @@
 import pytest
 
-from bikeshare import foo
-from bikeshare.model import preprocess
-
-
 def test_always_passes():
     assert True
 
