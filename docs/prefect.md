@@ -180,8 +180,11 @@ Elephant in the room - I need a way to put all the bikeshare data onto the S3 bu
 
 Okay let's put one up, and run a dockerized agent locally
 
+<<<<<<< HEAD
 Again, needs API, but *also*, API_KEY to authenticate itself. Not really mentioned in the docs.
 
+=======
+>>>>>>> 5c259934fc44b5359a81bcc1c3dc6d2565e9c7ad
 ## Testing
 
 Couldn't run the `flow_deploy.py` from CLI without getting ensnarled by Import Error, so used pytest. After adding the *mandatory* `.prefectignore`, apparently it copies the entire project directory into the storage block. The path of the storage block is also relative to the project home, so by setting it as `./prefect_block` I now have `to-bikes/prefect_block`. Hmm.

@@ -42,7 +42,11 @@ def tmp_prefect_block(tmp_block_path, local_block_name):
 @pytest.fixture(scope="session")
 def tmp_prefect_deploy(tmp_prefect_block):
     yield Deployment.build_from_flow(
+<<<<<<< HEAD
         flow=flow_deploy.my_flow,
+=======
+        flow=flow_deploy.flow,
+>>>>>>> 5c259934fc44b5359a81bcc1c3dc6d2565e9c7ad
         name='test2',
         work_queue_name='test2',
         storage=tmp_prefect_block,

@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 from typing import Union
 
 from prefect.deployments import Deployment
@@ -68,12 +68,11 @@ def deploy(
     path: str = './prefect_block', 
     overwrite: bool = False,
     ):
-    
+
     if filesystem == "s3":
         storage = make_s3_block(overwrite=overwrite)
     elif filesystem == "local":
         storage = make_local_block(basepath=path)
-        
     else:
         raise ValueError("`local` or `s3` for filesystem type")
     logging.info(type(storage))
@@ -81,6 +80,5 @@ def deploy(
         storage, 
         name=name,
         )
-
     deployment.apply()
     return True
