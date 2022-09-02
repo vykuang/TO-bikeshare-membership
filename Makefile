@@ -9,7 +9,7 @@ test:
 	pytest --version
 	pytest tests/
 
-quality_checks: test
+quality_checks:
 	isort --version
 	isort src/
 	black --version
@@ -17,7 +17,7 @@ quality_checks: test
 	pylint --version
 	pylint src/
 
-ci:  quality_checks
+ci:  quality_checks tests
 	pre-commit
 
 # build: quality_checks test

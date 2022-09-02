@@ -16,7 +16,7 @@ def prep(df_bikes):
 
 
 @flow
-def flow(path: Path):
+def my_flow(path: Path):
     logger = get_run_logger()
     logger.info("reading data")
     df = read_data(path)

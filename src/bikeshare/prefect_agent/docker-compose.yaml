@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  prefect-agent:
+    image: to-bikes/prefect-agent:v0
+    build:
+      context: .
+      dockerfile: agent.Dockerfile
+    env_file: # sets my AWS_PROFILE to know which creds to use
+      - .env
+    volumes: # :ro for read only
+      - type: bind
+        source: ~/.aws/
+        target: /root/.aws
+        read_only: true
+    command: [ "$PREFECT_WORK_QUEUE" ]
+        
