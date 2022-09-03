@@ -12,6 +12,7 @@ python-dotenv = "*"
 hyperopt = "*"
 boto3 = "*"
 prefect = "~=2.3"
+s3fs = "*"
 
 [dev-packages]
 black = "*"

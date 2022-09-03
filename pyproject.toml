@@ -6,6 +6,10 @@ disable = [
     "missing-final-newline",
     "trailing-newlines",
     "trailing-whitespace",
+    "logging-fstring-interpolation",
+]
+enable = [
+    "logging-not-lazy",
 ]
 
 [tool.pytest.ini_options]

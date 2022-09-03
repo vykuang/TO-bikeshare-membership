@@ -7,13 +7,14 @@ from sklearn.model_selection import train_test_split
 
 
 def read_df(path: str):
+    # can accept local and S3 filepath
     df = pd.read_csv(path)
     return df
 
 
 def dump_pickle(obj, filename):
     with open(filename, "wb") as f_out:
-        return pickle.dump(obj, f_out)
+        pickle.dump(obj, f_out)
 
 
 def preprocess(df_bikes: pd.DataFrame):

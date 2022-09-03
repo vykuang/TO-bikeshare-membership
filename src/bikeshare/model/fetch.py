@@ -4,7 +4,8 @@ If invoked from terminal, takes in year and output_path as parameters
 """
 
 import argparse
-import json
+import logging
+import time
 from pathlib import Path
 
 import requests
@@ -27,13 +28,13 @@ def get_package_metadata(
 ):
 
     params = {"id": pkg_id}
-    package = requests.get(BASE_URL + api_url, params=params).json()
+    package = requests.get(BASE_URL + api_url, params=params, timeout=5).json()
     return package
 
 
 # with open('pkg_list.json', 'w') as f_out:
 #     json.dump(package, f_out)
-def parse_years(years: str):
+def parse_years(years: str) -> set:
     years_list = years.split(",")
     # raise ValueError if non-year values are given
     years_list = [year for year in years_list if year.isnumeric()]
@@ -41,7 +42,7 @@ def parse_years(years: str):
     return set(years_list)
 
 
-def make_path(output_path: Path):
+def make_path(output_path: Path) -> bool:
     if not output_path.exists:
         Path.mkdir(output_path, exist_ok=True, parents=True)
         return True
@@ -49,7 +50,7 @@ def make_path(output_path: Path):
         return False
 
 
-def is_year_present(name: list, years):
+def is_year_present(name: list, years) -> bool:
     """regex to match year: 20[0-9]{2}($|-)"""
     present = [part in years for part in name]
     return any(present)
@@ -66,21 +67,23 @@ def run(years, output_path):
         name_split = resource["name"].split("-")
         if not resource["datastore_active"] and is_year_present(name_split, years):
             res_url = resource["url"]
-            with requests.get(res_url, stream=True) as resource_dump_data:
+            with requests.get(res_url, stream=True, timeout=5) as resource_dump_data:
                 resource_dump_data.raise_for_status()
                 # how to convert dump_data to .zip?
                 fname = f"""{resource['name']}.{resource['format'].lower()}"""
                 file_path = Path(output_path / fname)
                 if not file_path.exists():
-                    print(f"Requesting from {res_url}")
+                    logging.info(f"Requesting from {res_url}")
                     with open(file_path, "wb") as file:
-                        print(f"Writing to {file_path}")
+                        logging.info(f"Writing to {file_path}")
                         for chunk in resource_dump_data.iter_content(
                             chunk_size=512 * 1024
                         ):
                             file.write(chunk)
                 else:
-                    print(f"Already exists: {file_path}")
+                    logging.warn(f"Already exists: {file_path}")
+            # to not hammer the server with quests too quickly
+            time.sleep(1)
             # resource_urls.append(res_url)
 
 

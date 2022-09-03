@@ -64,6 +64,49 @@ The `.prefectignore` is placed not in the flow's current director, but in projec
 
 Work queue should also be created and assigned here, to organize our flows, and have agents dedicated to specific queues.
 
+Flow parameters:
+
+* data_path - s3 path to the bikeshare csv files
+* dest-path - path in prefect-agent local dir to store the .pkl files
+
+Save as .env vars? Currently hard-coded.
+
+I do not think I should pass a `dict` of flow parameters through CLI when I call `flow_deploy.py`. Requires me to pass it as `'{"key": "val"}'` and then use `json.loads` as type, and even after all that it throws me this `multiple param passed for arg flow_parameter` error.
+
+It's because of this:
+
+```py
+# definition
+def build(
+    flow_params,
+    storage: Union[S3, LocalFileSystem],
+    deploy_name: str = "my_flow",
+    work_queue_name: str = "to-bikes",
+    apply: bool = True,
+):
+    ...
+
+# invoke
+deployment = build(
+        storage,
+        deploy_name=deploy_name,
+        flow_params=parameters,
+        apply=apply,        
+    )
+```
+
+I defined `flow_params` as positional arg, and put `storage` in the first position. Immediately after I define `flow_params` again, this time the way I want to. Add `storage=storage` when invoking `build()`.
+
+#### .prefectignore
+
+Trying to work this thing with `deploy.py` is kind of frustrating. Their workflow expects you to use CLI and `prefect deploy build ...` and a `deploy.yaml`, which automatically creates a `.ignore` in the same folder. Also, it's kind of important because if I can't properly configure this thing, it'll upload everything in the same directory as the flow script.
+
+Also having issues invoking `flow_deploy.py` because of the whole relative import thing.
+
+> Relative imports only work if the importing module has `__name__` other than `__main__`, i.e. NOT CALLING IT FROM CLI
+
+If I call `flow_deploy.py` from CLI, the ignore file needs to be present in `pwd`.
+
 ### Storage
 
 Stores the flow code for deployments. Uses the concept of *Blocks*. Define a block to be our S3 bucket. Note that default is local filesystem.
@@ -156,6 +199,16 @@ If we configure a remote instance to act as agent, and install the project depen
 
 Work queues are mostly managed by prefect automatically. Set in deployment and agent start so that they match. Think of it as a pub/sub topic.
 
+Local agent was able to properly collect the flow when I applied `s3` as storage, since it was able to read/write to S3. Took 6 minutes but it worked. One wrinkle: where did it save my pickles???
+
+As far as I know, I ran it as local agent under ~/to-bikes, and I saved it to `./output/`. But nothing new in `~/to-bikes`. Let's add a debug statement:
+
+```py
+logger.debug(f'absolute dest_path: {dest_path.resolve()}')
+```
+
+Edited and reapplied flow deployment, but didn't take. How would I update my flow?
+
 ### Agent Infra
 
 What does it need?
@@ -180,15 +233,31 @@ Elephant in the room - I need a way to put all the bikeshare data onto the S3 bu
 
 Okay let's put one up, and run a dockerized agent locally
 
-<<<<<<< HEAD
 Again, needs API, but *also*, API_KEY to authenticate itself. Not really mentioned in the docs.
 
-=======
->>>>>>> 5c259934fc44b5359a81bcc1c3dc6d2565e9c7ad
+Let's upload a file to the cloud. But do I want the prefect-agent to pull directly from TO open data and push to cloud, and then pull from cloud??? I almost think that first part, of pulling from source and pushing to cloud, should be a different flow.
+
+I think to simplify, let's assume that part is done. All relevant files are stored in S3. Leave the pull and store as future dev.
+
+How will prefect-agent know which file to pull? How should the training file name be parametrized? Parametrize flow when applying deployment.
+
+### local block
+
+When I ran using local block, the prefect agent threw an error:
+
+```
+ERROR   | Flow run 'alpha3-valo' - Flow could not be retrieved from deployment.
+FileNotFoundError: [Errno 2] No such file or directory: 'prefect_block'
+```
+
+So my docker agent didn't have access to the block, probably because it's dockerized.
+
 ## Testing
 
 Couldn't run the `flow_deploy.py` from CLI without getting ensnarled by Import Error, so used pytest. After adding the *mandatory* `.prefectignore`, apparently it copies the entire project directory into the storage block. The path of the storage block is also relative to the project home, so by setting it as `./prefect_block` I now have `to-bikes/prefect_block`. Hmm.
 
 If I try testing with `tmp_path`, because I've already created the `local` block and set overwrite False, no new block gets created, and existing block does not have its directory updated, and so remains `./prefect_block` in my home directory.
 
-Making blocks doesn't lend itself well to testing, but loading it is okay.
+Making blocks doesn't lend itself well to testing, requiring a few workaround and being resource intensive, but loading it is okay. Workarounds meaning using pytest's `tmp_path_factory` and `subprocess.run(["bash", "cmd"])` to remove the created blocks as part of teardown since the python SDK doesn't allow block deletion.
+
+Currently as of 2022/9/3 I need to run both `test_flow_deploy` and `test_make_block` for the teardown to work properly and not fail.

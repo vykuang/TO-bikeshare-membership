@@ -1,14 +1,21 @@
+# Sensitive
 .env
 
-Makefile
-Pipfile*
+# not relevant
+*.ipynb
+prefect_agent/
+__init__.py
+
+# meta info
 *.md
 *.toml
 docs/
 tests/
 data/
-
-# meta info
 __pycache__/
-.pre-commit*
+
+# overheads
+.p*
 .git*
+Makefile
+Pipfile*
