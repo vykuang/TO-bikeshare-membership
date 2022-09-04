@@ -94,3 +94,33 @@ subprocess.run(
         check=True, text=True,
     )
 ```
+
+### prefect
+
+[from prefect.testing.utilities import prefect_test_harness](https://docs.prefect.io/tutorials/testing/)
+
+```py
+from prefect import flow
+import pytest
+from prefect.testing.utilities import prefect_test_harness
+
+@pytest.fixture(autouse=True, scope="session")
+def prefect_test_fixture():
+    with prefect_test_harness():
+        yield
+
+@flow
+def my_favorite_flow():
+    return 42
+
+def test_my_favorite_flow():
+    assert my_favorite_flow() == 42
+
+@task
+def my_favorite_task():
+    return 42
+
+# use .fn() to call the underlying function
+def test_my_favorite_task():
+    assert my_favorite_task.fn() == 42
+```

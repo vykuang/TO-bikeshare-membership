@@ -4,7 +4,7 @@ services:
   prefect-agent:
     image: to-bikes/prefect-agent:v0
     build:
-      context: .
+      context: .  # same dir as yaml
       dockerfile: agent.Dockerfile
     env_file: # sets my AWS_PROFILE to know which creds to use
       - .env
@@ -13,5 +13,6 @@ services:
         source: ~/.aws/
         target: /root/.aws
         read_only: true
-    command: [ "$PREFECT_WORK_QUEUE" ]
+    # same as Dockerfile currently, but this overrides that, if different.
+    command: [ "$PREFECT_WORK_QUEUE" ] 
         

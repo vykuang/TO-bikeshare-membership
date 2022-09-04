@@ -1,5 +1,11 @@
 #!usr/bin/env python
 
+"""
+To run:
+cd ~/to-bikes
+python -m src.bikeshare.model.flow_deploy -f s3
+"""
+
 import argparse
 import json
 import logging
@@ -13,7 +19,7 @@ from prefect.deployments import Deployment
 from prefect.filesystems import S3, LocalFileSystem
 from prefect.orion.schemas.schedules import CronSchedule
 
-from .flow import my_flow
+from .flow import to_bikes_flow
 
 dotenv_path = Path(__file__).parent.resolve() / ".env"
 load_dotenv(dotenv_path)
@@ -64,12 +70,12 @@ def make_local_block(
 def build(
     flow_params,
     storage: Union[S3, LocalFileSystem],
-    deploy_name: str = "my_flow",
+    deploy_name: str = "to_bikes_flow",
     work_queue_name: str = PREFECT_WORK_QUEUE,
     apply: bool = True,
 ):
     deployment = Deployment.build_from_flow(
-        flow=my_flow,
+        flow=to_bikes_flow,
         parameters=flow_params,
         name=deploy_name,
         version="1",
@@ -97,7 +103,8 @@ def deploy(
     if not flow_params:
         flow_params = {
             "data_path": "s3://to-bikeshare-data/source/2017/q1.csv",
-            "dest_path": "./output/",
+            # "dest_path": "./output/",
+            "num_trials": 10,
         }
     logging.info(f"Accepted flow_params: \n{flow_params}")
 

@@ -1,0 +1,65 @@
+###
+### A complete description of a Prefect Deployment for flow 'to-bikes-flow'
+###
+name: to-bikes-clf-train-s3
+description: |-
+  Deployment flow for re-training the TO-bikeshare-classifier
+
+  Taken from preprocess.run(), with prefect logger added
+version: v0
+# The work queue that will handle this deployment's runs
+work_queue_name: TO-bikes-clf
+tags:
+- to-bikes
+parameters:
+  data_path: s3://to-bikeshare-data/source/2017/q1.csv
+  num_trials: 10
+schedule:
+  cron: 0 0 1 * *
+  timezone: null
+  day_or: true
+infra_overrides: {}
+
+###
+### DO NOT EDIT BELOW THIS LINE
+###
+flow_name: to-bikes-flow
+manifest_path: null
+infrastructure:
+  type: process
+  env: {}
+  labels: {}
+  name: null
+  command:
+  - python
+  - -m
+  - prefect.engine
+  stream_output: true
+  _block_document_id: 7a3f9ab1-5227-4ecf-a3d6-d7a20b79785d
+  _block_document_name: anonymous-d73bce83-4bf5-4358-bf50-1d4208be6f28
+  _is_anonymous: true
+  _block_type_slug: process
+storage:
+  bucket_path: prefect-storage-1212
+  aws_access_key_id: '**********'
+  aws_secret_access_key: '**********'
+  _block_document_id: 994699e9-fe0e-45bc-89a7-54f7d3f70d3f
+  _block_document_name: to-bikes-flows
+  _is_anonymous: false
+  _block_type_slug: s3
+path: to-bikes-clf-train/
+entrypoint: flow.py:to_bikes_flow
+parameter_openapi_schema:
+  title: Parameters
+  type: object
+  properties:
+    data_path:
+      title: data_path
+      type: string
+    num_trials:
+      title: num_trials
+      type: integer
+  required:
+  - data_path
+  - num_trials
+  definitions: null

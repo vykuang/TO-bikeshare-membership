@@ -107,6 +107,24 @@ Also having issues invoking `flow_deploy.py` because of the whole relative impor
 
 If I call `flow_deploy.py` from CLI, the ignore file needs to be present in `pwd`.
 
+### `prefect deploy build <.yaml>`
+
+Easier to just do it this way I think. Have a flow.py, build a yaml with the command, then apply and run. Edit the parameters inside the yaml.
+
+```bash
+#! /usr/bin/env sh
+prefect deployment build ./flow.py:my_flow \
+	--name to-bikes-clf-train-s3 \
+	--version v0 \
+	--tag to-bikes \
+	--work-queue TO-bikes-clf \
+	--storage-block s3/to-bikes-flows \
+	--cron "0 0 1 * *" \
+	--output to-bikes-clf-train-s3-deployment.yaml \
+	--path to-bikes-clf-train/
+    --apply
+```
+
 ### Storage
 
 Stores the flow code for deployments. Uses the concept of *Blocks*. Define a block to be our S3 bucket. Note that default is local filesystem.
@@ -209,6 +227,9 @@ logger.debug(f'absolute dest_path: {dest_path.resolve()}')
 
 Edited and reapplied flow deployment, but didn't take. How would I update my flow?
 
+* Delete and reapply
+* Or just reapply
+
 ### Agent Infra
 
 What does it need?
@@ -239,7 +260,33 @@ Let's upload a file to the cloud. But do I want the prefect-agent to pull direct
 
 I think to simplify, let's assume that part is done. All relevant files are stored in S3. Leave the pull and store as future dev.
 
+#### Prefect-agent
+
+Runs much quicker in docker than in local mode, perhaps due to lack of infrastructure setup.
+
 How will prefect-agent know which file to pull? How should the training file name be parametrized? Parametrize flow when applying deployment.
+
+Also needs MLflow variable to be set in `.env`.
+
+Okay, now that I've made changes to the code, I need to re-upload them to the remote storage for my prefect agent. Re-build and re-apply the `.yaml`. Also note that I've hard-coded the parameters inside the `deployment.yaml`.
+
+* MLflow is not being loaded; TRACKING_URI not being used. Causes agent to create SQLite.db
+    * Cause: When I load functions from `trials.py`, I'm loading them directly and bypassing the `trials` module. This means the top level function where I'm loading the `.env` is not being executed.
+    * Action:
+        1. Move `load_dotenv` to within model_search()?
+        2. Import trials in my flow.py?
+    * I think #1 is most straightforward
+    * Seems to be breaking my initial ideology of leaving the existing code alone, if I have to shift these things around to fit the flow.
+* Removed `dest_path`, the intermediate storage for the `.pkl` files; just pass the test_train_split results directly to model_search
+
+Clean run at 11:38 pm.
+
+Remaining issues:
+
+* How to parametrize the flow dynamically? Currently the yaml file needs to be manually edited.
+* Testing, possibly within prefect context.
+* Add `fetch.py` to the pipeline, to pull from source and push to S3 data bucket.
+* Using CLI to deploy and apply the flows also forces me to create storage blocks manually. The original idea behind using python API to do so was so that I could avoid that.
 
 ### local block
 
@@ -250,7 +297,7 @@ ERROR   | Flow run 'alpha3-valo' - Flow could not be retrieved from deployment.
 FileNotFoundError: [Errno 2] No such file or directory: 'prefect_block'
 ```
 
-So my docker agent didn't have access to the block, probably because it's dockerized.
+So my docker agent didn't have access to the block, probably because it's dockerized. Need to attach as a volume, perhaps, if I need to use local storage with docker agent.
 
 ## Testing
 

@@ -15,24 +15,24 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder
 
-dotenv_path = Path.cwd() / ".env"
-load_dotenv(dotenv_path)
-
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
-MLFLOW_EXP_NAME = os.getenv("MLFLOW_EXP_NAME", "TO-bikeshare-clf")
-mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-mlflow.set_experiment(MLFLOW_EXP_NAME)
-
 
 def load_pickle(path: Path):
     with open(path, "rb") as f_in:
         return pickle.load(f_in)
 
 
-def run(data_path, num_trials):
+def model_search(train, test, num_trials):
 
-    train = load_pickle(Path(data_path / "train.pkl"))
-    test = load_pickle(Path(data_path / "test.pkl"))
+    dotenv_path = Path.cwd() / ".env"
+    load_dotenv(dotenv_path)
+
+    MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
+    MLFLOW_EXP_NAME = os.getenv("MLFLOW_EXP_NAME", "TO-bikeshare-clf")
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+    mlflow.set_experiment(MLFLOW_EXP_NAME)
+
+    # train = load_pickle(Path(data_path) / "train.pkl")
+    # test = load_pickle(Path(data_path) / "test.pkl")
 
     X_train = train.drop("target", axis=1)
     y_train = train["target"].values
@@ -72,14 +72,23 @@ def run(data_path, num_trials):
     }
 
     rstate = np.random.default_rng(42)  # for reproducible results
+    trials = Trials()
     fmin(
         fn=objective,
         space=search_space,
         algo=tpe.suggest,
         max_evals=num_trials,
-        trials=Trials(),
+        trials=trials,
         rstate=rstate,
+        return_argmin=True,
     )
+    return trials
+
+
+def _run(data_path, max_evals):
+    train = load_pickle(data_path / "train.pkl")
+    test = load_pickle(data_path / "test.pkl")
+    model_search(train=train, test=test, num_trials=max_evals)
 
 
 if __name__ == "__main__":
@@ -99,4 +108,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    run(args.data_path, args.max_evals)
+    _run(args.data_path, args.max_evals)
