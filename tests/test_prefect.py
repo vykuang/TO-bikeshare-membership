@@ -6,19 +6,19 @@ from bikeshare.model import flow_deploy
 from bikeshare.model import flow
 
 
-@pytest.mark.prefect
-def test_flow_deploy(tmp_prefect_deploy, tmp_prefect_block):
-    flow_params = {
-        'data_path': '/home/kohada/to-bikes/data/test-2017.csv',
-        'dest_path': './output/'
-        }
-    assert type(tmp_prefect_deploy) == \
-        type(flow_deploy.build(
-            flow_params=flow_params,
-            storage=tmp_prefect_block,
-            deploy_name='local',
-            work_queue_name='test',
-            ))
+# @pytest.mark.prefect
+# def test_flow_deploy(tmp_prefect_deploy, tmp_prefect_block):
+#     flow_params = {
+#         'data_path': '/home/kohada/to-bikes/data/test-2017.csv',
+#         'dest_path': './output/'
+#         }
+#     assert type(tmp_prefect_deploy) == \
+#         type(flow_deploy.build(
+#             flow_params=flow_params,
+#             storage=tmp_prefect_block,
+#             deploy_name='local',
+#             work_queue_name='test',
+#             ))
 
 @pytest.mark.prefect
 def test_make_block(tmp_prefect_block, local_block_name, tmp_block_path):

@@ -49,3 +49,19 @@ s3.meta.client.download_file(
     Filename='/tmp/hello.txt')
 
 ```
+
+## Credentials
+
+For docker to access AWS resources, attach the local ~/.aws/credentials as volume.
+
+However for docker running on EC2, they get the EC2 creds for free [See docs](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html)
+
+docker can also retrieve creds from the instance's private IP
+
+Problem with passing .env is that `printenv` commands inside the container will expose the keys, but one could argue that if access to the containers is compromised then all is already lost.
+
+### Profiles
+
+`aws configure --profile <my_profile>` to set creds for specific profiles
+
+* Pass profile to docker containers with `AWS_PROFILE` env var

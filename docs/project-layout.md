@@ -37,6 +37,8 @@ Flow deployment:
     * `from .flow import my_flow`
 * `.prefectignore` in `to-bikes/`
 
+I switched to using CLI: `prefect deployment build ./flow.py:to_bikes_flow` to make yaml and then `prefect deployment apply <flow_ID>`. 
+
 ## Relative imports
 
 Relevant links:
@@ -54,4 +56,3 @@ When .py is *imported*, it is run as a module. `__name__` is then derived from t
 Relative imports use the `__name__` to determine the relative import locations. But because script's name is overridden as `__main__`, the `.` operator aren't found; its name has no dots. Nothing is relative to this top-level script. It results in *relative-import in non-package* error.
 
 > Relative imports are only for use within module files.
-

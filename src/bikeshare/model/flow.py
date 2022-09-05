@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from prefect import flow, get_run_logger, task
 from sklearn.model_selection import train_test_split
 
