@@ -6,23 +6,69 @@ End-to-end ML deployment of a model predicting whether a trip record belongs to 
 
 Bikeshare ridership data - given these features:
 
-* ride start time
+* ride start datetime
 * duration
 * start station id
 * to-station id
 
 Can we predict whether the user is a member (annual pass) or casual (short term pass)? Is this an unbalanced dataset? Are there far more members than casual trips logged?
 
+## Architecture
+
+[Insert architecture diagram here]
+
+* `scikit-learn` classifiers train on source data
+* `MLFlow` tracks experiment results
+* `Prefect` orchestrates the training pipeline; Prefect Cloud free tier is used as the orchestration server, and a dockerized agent executes the deployed flows
+* `AWS S3` stores the source data, MLflow model artifacts, and orchestration backend database
+* `AWS EC2` instance hosts the remote MLflow tracking server and dockerized prefect agent
+* `AWS RDS` postgres instance hosts the remote MLflow backend store; contains the run metrics and metadata for all experiments from the tracking server
+
 ## Running this thing
 
-To run this for yourself, do this:
+### Set up
 
-### ENV VARS
+1. Use the `sample-bikeshare.csv` as our source data.
+2. Set up MLflow
+	* Tracking server can be local or remote server
+	* Backend store can be local or remote database
+	* Artifact store can be local filesystem or remote bucket
+3. Set up Prefect 
+	* Scheduler can be local, remote, or Prefect Cloud (hosted by Prefect)
+	* storage can be local or remote bucket; this is where Prefect stores the deployment flow codes to be run by the agent
+	* Agent can be local instance or remote, as long as they have access to storage and prefect scheduling server
+4. (Optional) Set up AWS
+	* S3 for raw data storage, MLflow artifact store, and Prefect deployment code storage
+	* RDS for MLflow backend store, and potentially prefect if running a remote instance not hosted by Prefect Cloud
+	* EC2 to run MLflow server, and potentially prefect.
+	* Note that MLflow also has options for third-party hosted servers with free tier usage options, e.g. Neptune.
+
+### environment variables
+
+These are the environment variables required by prefect deployment flows, prefect agent, and the ML deployment server
+
+<list of env vars to set>
+	
+To reproduce the project, the cloud resources are not required; every component of the project can be run locally. Both MLflow and Prefect have the option to host local servers, and the backend store database can point to a lightweight SQLite `.db` file. Simply change the environment variables so that they point to a valid local resource.
+
+## Modelling
+
+
+
+
+## Experiment Tracking
+
+## Orchestration
+
+## Deployment
+
 
 ## Future Development
 
 * Handling datasets from different years, not just 2017, taking into account the different column names and data fields
+* Adding a dummy classifier to serve as baseline comparison.I.e. If target is 95% positive, the dummy classifier should predict positive 95% of the time. Will our trained classifier perform better?
 * Adding seasonality and year as features
 * Complete script to include fetching data from TO open data as part of the pipeline
     * prefect-agent assumes that all source data has been neatly stored on `to-bikeshare-data` bucket in `/source/<year>/<quarter>.csv` format
     * `fetch` should pull from TO open data and push to cloud bucket in that format.
+* Add multiple model types in the hyperopt search space; currently using only random forest
