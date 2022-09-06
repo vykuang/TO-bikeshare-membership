@@ -1,5 +1,5 @@
 """
-Retrieves and runs thee latest version of the registered model
+Retrieves and runs the latest version of the registered model
 """
 import os
 from pathlib import Path
