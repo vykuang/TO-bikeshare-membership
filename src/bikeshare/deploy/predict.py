@@ -38,7 +38,6 @@ def retrieve():
     # the models:/model_name/Production uri is only useable if MLflow server is up
     model = mlflow.pyfunc.load_model(
         # model_uri=f'models:/{MLFLOW_REGISTERED_MODEL}/Production'
-        # model_uri='s3://mlflow-artifacts-remote-1212/4/fcf666f0460b4ad8b6b6ab2bfe14a902/artifacts/models'
         model_uri=model_uris[0]
     )
     return model
@@ -48,8 +47,9 @@ def predict(model, features):
     """Given model and bikeshare trip data, return the predicted membership,
     as well as the associated probability
     """
-    preds = model.predict(features)
-    return float(preds[0])
+    pred = model.predict(features)
+    proba = model.predict_proba(features)
+    return float(pred), float(proba)
 
 
 app = Flask("bikeshare-membership-prediction")
@@ -68,10 +68,10 @@ def predict_endpoint():
     logging.info("Received POST request")
 
     features = preprocess(ride)
-    preds = predict(features)
+    pred, proba = predict(features)
     result = {
-        "predicted_membership": preds,
-        "probability": preds[1],
+        "predicted_membership": pred,
+        "probability": proba,
         "model_version": {},
     }
 
