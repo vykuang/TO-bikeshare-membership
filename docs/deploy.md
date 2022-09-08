@@ -27,6 +27,14 @@ This is a simpler mode of deployment, and fitting for this proof of concept proj
     * AWS_PROFILE to select the role with the least possible permission
     * Alternatively the docker could run on EC2 instance with the correct user attached and there would be no need to load credentials
 
+## Testing
+
+Run `predict.py` locally to use flask server in debug mode. Test with `test_pred.py`. Make sure the ports agree.
+
+### ColumnTransformer instance not fitted yet
+
+This is awkward.
+
 ## Other deployment scenarios
 
 Instead of POSTing the actual trip data as input to the web service...

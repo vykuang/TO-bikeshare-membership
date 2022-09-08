@@ -16,9 +16,12 @@ COPY [ "Pipfile", "Pipfile.lock", "./"]
 
 RUN pipenv install --system --deploy
 
+ARG MODEL_PORT="9001"
+ENV MODEL_PORT=${MODEL_PORT}
+
 COPY [ "predict.py", "./" ]
 # EXEC form; ENTRYPOINT provides the wrapper,
-ENTRYPOINT [ "gunicorn", "--bind", "0.0.0.0:9001", "predict:app" ]
+ENTRYPOINT [ "gunicorn", "--bind" ]
 
 # CMD provides the customization argument
 # CMD [ "$" ]

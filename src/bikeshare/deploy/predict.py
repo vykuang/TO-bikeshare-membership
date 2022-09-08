@@ -4,10 +4,11 @@ Retrieves and runs the latest version of the registered model
 import logging
 import os
 import sys
-
+from datetime import datetime
 import mlflow.pyfunc
 from flask import Flask, jsonify, request
 from mlflow.tracking import MlflowClient
+from dotenv import load_dotenv
 
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
 MLFLOW_EXP_NAME = os.getenv("MLFLOW_EXP_NAME", "TO-bikeshare-classifier")
@@ -18,7 +19,19 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 def preprocess(ride):
     """Preprocess the json input"""
     logging.info("Preprocessing request")
+    
     features = {}
+    date_fmt = """%d/%m/%Y %H:%M"""
+    dt_start = datetime.strptime(ride['trip_start_time'], date_fmt)
+    dt_end = datetime.strptime(ride['trip_stop_time'], date_fmt)
+    features['day_of_week'] = dt_start.weekday()
+    features['start_hour'] = dt_start.hour
+    features['end_hour'] = dt_end.hour
+    features['target'] = ride['user_type'] == "Member"
+    features['from_station_id'] = ride['from_station_id']
+    features['to_station_id'] = ride['to_station_id']
+    features['trip_duration_seconds'] = ride['trip_duration_seconds']
+    logging.debug(f'Num features returned: {len(features)}')
     return features
 
 
@@ -56,8 +69,7 @@ def predict(model, features):
 
 app = Flask("bikeshare-membership-prediction")
 
-
-@app.route("/predict", methods=["POST"])
+@app.route("/predict", methods=["PUT"])
 def predict_endpoint():
     """Joining the above funcs into one invocation triggered
     by an HTTP POST request
@@ -66,7 +78,7 @@ def predict_endpoint():
     """
     # from the POST request
     ride = request.get_json()
-    logging.info("Received POST request")
+    logging.info("Received PUT request")
 
     features = preprocess(ride)
     logging.info("Preprocessed input data")
@@ -78,8 +90,17 @@ def predict_endpoint():
     result = {
         "predicted_membership": pred,
         "probability": proba,
-        "model_version": {},
+        "model_version": model.metadata,
     }
     logging.info("Returning result")
 
     return jsonify(result)
+
+if __name__ == "__main__":
+    load_dotenv()
+    app.run(
+        debug=True,
+        host="0.0.0.0",
+        port=9393,
+    )
+
