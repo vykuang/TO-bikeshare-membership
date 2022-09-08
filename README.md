@@ -62,6 +62,21 @@ To reproduce the project, the cloud resources are not required; every component 
 
 ## Deployment
 
+## using the service
+
+Once set up, the deployment container will expose an URL endpoint for users to `PUT` a predict request. `PUT` was selected over `POST` since no new resource is being created, and user should receive the same result each time they request with the same input data.
+
+Current implementation can accept one trip data per `PUT` request. The accompanying JSON keys should match the columns of the training data:
+
+```json
+{
+    'trip_id': 1,
+    'from_station_id': 123,
+    'from_station_name': "abc",
+    'to_station_id': 234,
+    'to_station_name': "xyz",
+    'trip_duration_seconds': 100,
+} 
 
 ## Future Development
 
