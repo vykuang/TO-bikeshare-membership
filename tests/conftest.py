@@ -3,20 +3,13 @@ import subprocess
 
 from prefect.filesystems import LocalFileSystem 
 from prefect.deployments import Deployment
-from prefect import flow
-
-from prefect.testing.utilities import prefect_test_harness
 from bikeshare.model import flow_deploy
 
-@pytest.fixture(autouse=True, scope="session")
-def prefect_test_fixture():
-    with prefect_test_harness():
-        yield
 
-@pytest.fixture(scope="session")
-def local_block_name():
-    # alphanumeric and dashes only, no underscore
-    return "local-test"
+# @pytest.fixture(scope="session")
+# def local_block_name():
+#     # alphanumeric and dashes only, no underscore
+#     return "local-test"
 
 @pytest.fixture(scope="session")
 def tmp_block_path(tmp_path_factory):

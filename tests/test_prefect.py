@@ -2,14 +2,9 @@ import pytest
 from prefect import flow, task
 from pathlib import Path
 
-from bikeshare.model import flow
+from bikeshare.model.flow import preprocess_task
 
 from prefect.testing.utilities import prefect_test_harness
-
-@pytest.fixture(autouse=True, scope="session")
-def prefect_test_fixture():
-    with prefect_test_harness():
-        yield
 
 # @pytest.mark.prefect
 # def test_flow_deploy(tmp_prefect_deploy, tmp_prefect_block):
@@ -35,18 +30,11 @@ def prefect_test_fixture():
 #             overwrite=True,
 #             ))
 
-@pytest.mark.prefect
-def test_flow_local(tmp_path):
-    data_path = '/home/kohada/to-bikes/data/test-2017.csv'
-    dest_path = Path(tmp_path / 'output')
-    flow.my_flow(
-        data_path=data_path,
-        dest_path=dest_path,
-    )
-    # pkl_list = Path(tmp_path).glob('*.pkl')
-    checklist = [dest_path / 'train.pkl', dest_path / 'test.pkl']
-    present = [f.exists() for f in checklist]
-    assert all(present)
+# @pytest.mark.prefect
+@pytest.fixture(autouse=True, scope="session")
+def prefect_test_fixture():
+    with prefect_test_harness():
+        yield
 
 @task
 def my_favorite_task():
@@ -57,6 +45,34 @@ def my_favorite_flow():
     val = my_favorite_task()
     return val
 
+    # def test_my_favorite_task():
+    #     assert my_favorite_task.fn() == 42
+
+
 @pytest.mark.prefect
-def test_my_favorite_task():
-    assert my_favorite_task.fn() == 42
+class TestPrefect:
+    """
+    All prefect tests are grouped under this class
+    """
+    def test_my_favorite_flow(self):
+        """
+        Sample test. 
+        
+        self must be defined as one of the arg since it is constructed 
+        within the class; self is passed regardless and so we must
+        make room for it
+        """
+        # with prefect_test_harness():
+        assert my_favorite_flow() == 42
+
+    # def test_flow_local(tmp_path):
+    #     data_path = '/home/kohada/to-bikes/data/test-2017.csv'
+    #     dest_path = Path(tmp_path / 'output')
+    #     flow.my_flow(
+    #         data_path=data_path,
+    #         dest_path=dest_path,
+    #     )
+    #     # pkl_list = Path(tmp_path).glob('*.pkl')
+    #     checklist = [dest_path / 'train.pkl', dest_path / 'test.pkl']
+    #     present = [f.exists() for f in checklist]
+    #     assert all(present)  

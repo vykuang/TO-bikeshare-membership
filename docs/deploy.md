@@ -47,6 +47,24 @@ Should use `cross_validate` and log `scores['estimator']` instead. Note that acc
 
 How about I fit on train as normal, `cross_val_score` to obtain training score, and then test on held out data. From source code, this uses a clone of the estimator to make separate fit and predicts for evaluation, so I can still log the original fitted `clf` object, even after running CV, without worrying about the estimators changing.
 
+### `retrieve()` is hanging
+
+From logs the function is stuck at `model = mlflow.pyfunc.load_model(model_uri)`
+
+In a notebook it took just under 20 minutes to load a 2 MB model.pkl. Something is going on with S3. Tried with loading straight from mlflow server, same debug output:
+
+```
+DEBUG:s3transfer.tasks:Executing task IOWriteTask(transfer_id=0, {'offset': 2097152}) with kwargs {'fileobj': <s3transfer.utils.DeferredOpenFile object at 0x7ff1f0567130>, 'offset': 2097152}
+DEBUG:s3transfer.tasks:IOWriteTask(transfer_id=0, {'offset': 2359296}) about to wait for the following futures []
+DEBUG:s3transfer.tasks:IOWriteTask(transfer_id=0, {'offset': 2359296}) done waiting for dependent futures
+```
+
+Worked earlier on the laptop, but even then it took 10+ seconds. At this point the laptop is seeing the same results in terms of model loading.
+
+Maybe because I'm loading a canada server from asia?
+
+I should try running the frontend on amazon EC2.
+
 ## Other deployment scenarios
 
 Instead of POSTing the actual trip data as input to the web service...

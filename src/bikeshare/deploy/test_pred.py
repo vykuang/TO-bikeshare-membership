@@ -33,6 +33,6 @@ input_dict = {
     "user_type": "Member",
 }
 url = 'http://localhost:9393/predict'
-response = requests.put(url, json=input_dict, timeout=60)
+response = requests.put(url, json=input_dict, timeout=90)
 
 print(response.json())

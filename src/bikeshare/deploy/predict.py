@@ -4,20 +4,17 @@ Retrieves and runs the latest version of the registered model
 import logging
 import os
 import sys
+import pandas as pd
 from datetime import datetime
 import mlflow.pyfunc
 from flask import Flask, jsonify, request
 from mlflow.tracking import MlflowClient
 from dotenv import load_dotenv
 
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
-MLFLOW_EXP_NAME = os.getenv("MLFLOW_EXP_NAME", "TO-bikeshare-classifier")
-MLFLOW_REGISTERED_MODEL = os.getenv("MLFLOW_REGISTERED_MODEL", "TO-bikeshare-clf")
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-
-def preprocess(ride):
-    """Preprocess the json input"""
+def preprocess_json(ride: dict) -> dict:
+    """Preprocess the json input as dict"""
     logging.info("Preprocessing request")
     
     features = {}
@@ -31,22 +28,71 @@ def preprocess(ride):
     features['from_station_id'] = ride['from_station_id']
     features['to_station_id'] = ride['to_station_id']
     features['trip_duration_seconds'] = ride['trip_duration_seconds']
+
     logging.debug(f'Num features returned: {len(features)}')
     return features
 
+def preprocess(df_bikes: pd.DataFrame) -> pd.DataFrame:
+    """Preprocesses the bikeshare data
 
-def retrieve():
+    Converts the datetimes from str obj to datetime objects, and extracts
+    the time of day to convert into hour floats
+
+    This step is prior to feeding the arrays into the pipeline.
+    """
+    df_bikes["dt_start"] = pd.to_datetime(
+        df_bikes["trip_start_time"],
+        infer_datetime_format=True,
+    )
+    df_bikes["dt_end"] = pd.to_datetime(
+        df_bikes["trip_stop_time"],
+        infer_datetime_format=True,
+    )
+    # get day of week
+    df_bikes["day_of_week"] = df_bikes.apply(
+        lambda x: x["dt_start"].day_of_week, axis=1
+    )
+    # get hours
+    df_bikes["start_hour"] = df_bikes.apply(
+        lambda x: x["dt_start"].hour + x["dt_start"].minute / 60,
+        axis=1,
+    )
+    df_bikes["end_hour"] = df_bikes.apply(
+        lambda x: x["dt_end"].hour + x["dt_end"].minute / 60,
+        axis=1,
+    )
+    df_bikes["target"] = df_bikes["user_type"].apply(lambda type: type == "Member")
+    drops = [
+        "trip_start_time",
+        "trip_stop_time",
+        "from_station_name",
+        "to_station_name",
+        "dt_start",
+        "dt_end",
+        "user_type",
+    ]
+    df_bikes = df_bikes.drop(drops, axis=1)
+    return df_bikes
+
+def retrieve() -> mlflow.pyfunc.PyFuncModel:
     """Retrieves and returns the latest version of the registered model"""
+    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+    logging.debug(__name__)
+    MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://13.215.46.159:5000/")
+    MLFLOW_REGISTERED_MODEL = os.getenv("MLFLOW_REGISTERED_MODEL", "TO-bikeshare-clf")
+
     client = MlflowClient(tracking_uri=MLFLOW_TRACKING_URI)
     # search string requires quotation marks around everything
     # only one search expression in 1.26
     mv_search = client.search_model_versions(f"name='{MLFLOW_REGISTERED_MODEL}'")
+    logging.info('MLflow client created')
+
     for mv in mv_search:
         # pprint(dict(mv), indent=4)
-        logging.debug(f"version: {mv.version}\nStage: {mv.current_stage}\nSource: {mv.source}")
+        logging.info(f"version: {mv.version}\nStage: {mv.current_stage}\nSource: {mv.source}")
 
     model_uris = [mv.source for mv in mv_search if mv.current_stage == "Production"]
-    logging.debug(model_uris)
+    logging.info(model_uris)
 
     # alternatively model_uri could also be direct path to s3 bucket:
     # s3://{MLFLOW_ARTIFACT_STORE}/<exp_id>/<run_id>/artifacts/models
@@ -63,8 +109,7 @@ def predict(model, features):
     as well as the associated probability
     """
     pred = model.predict(features)
-    proba = model.predict_proba(features)
-    return float(pred), float(proba)
+    return bool(pred)
 
 
 app = Flask("bikeshare-membership-prediction")
@@ -80,16 +125,20 @@ def predict_endpoint():
     ride = request.get_json()
     logging.info("Received PUT request")
 
-    features = preprocess(ride)
+    rows = []
+    rows.append(ride)
+    df_bike = pd.DataFrame.from_dict(rows, orient='columns').set_index('trip_id')
+    features = preprocess(df_bike)
     logging.info("Preprocessed input data")
 
     model = retrieve()
     logging.info("Model retrieved from artifact store")
 
-    pred, proba = predict(model, features)
+    pred = predict(model, features)
     result = {
         "predicted_membership": pred,
-        "probability": proba,
+        # need custom pyfunc wrapper to include predict_proba
+        # "probability": proba, 
         "model_version": model.metadata,
     }
     logging.info("Returning result")
@@ -97,7 +146,6 @@ def predict_endpoint():
     return jsonify(result)
 
 if __name__ == "__main__":
-    load_dotenv()
     app.run(
         debug=True,
         host="0.0.0.0",
