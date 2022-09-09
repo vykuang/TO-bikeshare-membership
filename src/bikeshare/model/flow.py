@@ -36,9 +36,7 @@ def register_model_task():
 
 @flow()
 def to_bikes_flow(data_path: str, num_trials: int):
-    """Deployment flow for re-training the TO-bikeshare-classifier
-
-    Taken from preprocess.run(), with prefect logger added
+    """Deployment flow for training the TO-bikeshare-classifier
     """
     logger = get_run_logger()
 

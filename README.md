@@ -77,6 +77,7 @@ Current implementation can accept one trip data per `PUT` request. The accompany
     'to_station_name': "xyz",
     'trip_duration_seconds': 100,
 } 
+```
 
 ## Future Development
 
@@ -87,3 +88,5 @@ Current implementation can accept one trip data per `PUT` request. The accompany
     * prefect-agent assumes that all source data has been neatly stored on `to-bikeshare-data` bucket in `/source/<year>/<quarter>.csv` format
     * `fetch` should pull from TO open data and push to cloud bucket in that format.
 * Add multiple model types in the hyperopt search space; currently using only random forest
+* When loading model via MLflow's artifact store, the default model only has `.predict()`. [According to this issues page](https://github.com/mlflow/mlflow/issues/694), a custom wrapper is required if we want `.predict_proba()` as provided by the original sklearn model.
+

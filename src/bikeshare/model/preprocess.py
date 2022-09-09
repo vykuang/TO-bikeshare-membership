@@ -80,12 +80,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--raw_data_path",
         type=Path,
-        help="the location where the raw NYC taxi trip data was saved",
+        help="where the raw TO bikeshare trip data was saved",
     )
     parser.add_argument(
         "--dest_path",
         type=Path,
-        help="the location where the resulting files will be saved.",
+        help="where the resulting .pkl will be saved.",
     )
     args = parser.parse_args()
 

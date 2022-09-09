@@ -14,7 +14,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder
-
+from sklearn.metrics import roc_auc_score
 
 def load_pickle(path: Path):
     with open(path, "rb") as f_in:
@@ -53,12 +53,22 @@ def model_search(train, test, num_trials):
                 remainder="passthrough",
             )
             clf = make_pipeline(ct, RandomForestClassifier(**params))
+            clf.fit(X_train, y_train)
 
             cv = StratifiedKFold()
-            scores = cross_val_score(clf, X_train, y_train, cv=cv, scoring="roc_auc")
-            inv_roc_auc = 1 / np.average(scores)
-            mlflow.log_metric("inv_roc_auc", inv_roc_auc)
+            scores_train = cross_val_score(clf, X_train, y_train, 
+                                        cv=cv, scoring="roc_auc", n_jobs=-1,
+                                    )
+            roc_auc_train = np.average(scores_train)
+            mlflow.log_metric("roc_auc_train", roc_auc_train)
+
+            y_preds = clf.predict_log_proba(X_test)[:,1]
+            roc_auc = np.average(roc_auc_score(y_test, y_preds))
+
+            mlflow.log_metric("roc_auc", roc_auc)
             mlflow.sklearn.log_model(clf, artifact_path="models")
+
+            inv_roc_auc = 1 / roc_auc
 
         return {"loss": inv_roc_auc, "status": STATUS_OK}
 

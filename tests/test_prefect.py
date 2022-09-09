@@ -1,10 +1,15 @@
 import pytest
 from prefect import flow, task
 from pathlib import Path
-from bikeshare.model import flow_deploy
 
 from bikeshare.model import flow
 
+from prefect.testing.utilities import prefect_test_harness
+
+@pytest.fixture(autouse=True, scope="session")
+def prefect_test_fixture():
+    with prefect_test_harness():
+        yield
 
 # @pytest.mark.prefect
 # def test_flow_deploy(tmp_prefect_deploy, tmp_prefect_block):
@@ -20,15 +25,15 @@ from bikeshare.model import flow
 #             work_queue_name='test',
 #             ))
 
-@pytest.mark.prefect
-def test_make_block(tmp_prefect_block, local_block_name, tmp_block_path):
-    basepath = tmp_block_path / local_block_name    
-    assert type(tmp_prefect_block) == \
-        type(flow_deploy.make_local_block(
-            name=local_block_name,
-            basepath=basepath,
-            overwrite=True,
-            ))
+# @pytest.mark.prefect
+# def test_make_block(tmp_prefect_block, local_block_name, tmp_block_path):
+#     basepath = tmp_block_path / local_block_name    
+#     assert type(tmp_prefect_block) == \
+#         type(flow_deploy.make_local_block(
+#             name=local_block_name,
+#             basepath=basepath,
+#             overwrite=True,
+#             ))
 
 @pytest.mark.prefect
 def test_flow_local(tmp_path):
@@ -52,5 +57,6 @@ def my_favorite_flow():
     val = my_favorite_task()
     return val
 
+@pytest.mark.prefect
 def test_my_favorite_task():
     assert my_favorite_task.fn() == 42

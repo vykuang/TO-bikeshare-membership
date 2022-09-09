@@ -3,9 +3,7 @@
 ###
 name: to-bikes-clf-train-s3
 description: |-
-  Deployment flow for re-training the TO-bikeshare-classifier
-
-  Taken from preprocess.run(), with prefect logger added
+  Deployment flow for training the TO-bikeshare-classifier
 version: v0
 # The work queue that will handle this deployment's runs
 work_queue_name: TO-bikes-clf
@@ -13,7 +11,7 @@ tags:
 - to-bikes
 parameters:
   data_path: s3://to-bikeshare-data/source/2017/q1.csv
-  num_trials: 10
+  num_trials: 20
 schedule:
   cron: 0 0 1 * *
   timezone: null

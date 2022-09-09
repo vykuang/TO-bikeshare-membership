@@ -25,7 +25,7 @@ def register_model():
         experiment_ids=exp.experiment_id,
         run_view_type=ViewType.ACTIVE_ONLY,
         max_results=3,
-        order_by=["metrics.inv_roc_auc ASC"],
+        order_by=["metrics.roc_auc DESC"],
     )
     for run in best_runs:
         logging.debug(run.info.run_id)

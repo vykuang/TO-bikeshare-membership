@@ -33,7 +33,19 @@ Run `predict.py` locally to use flask server in debug mode. Test with `test_pred
 
 ### ColumnTransformer instance not fitted yet
 
-This is awkward.
+When I call `mlflow.sklearn.log_model()` on the `clf` object, that has not been fitted yet, because the scores obtained is from `cross_val_score`, which does not return the fitted estimator. Need to use `cross_validate` and set `return_estimator=True`. Returns a `dict` with these keys: 
+
+```
+>>> scores = cross_validate(clf, X, y,
+...                         scoring='precision_macro', cv=5,
+...                         return_estimator=True)
+>>> sorted(scores.keys())
+['estimator', 'fit_time', 'score_time', 'test_score']
+```
+
+Should use `cross_validate` and log `scores['estimator']` instead. Note that according [to source code](https://github.com/scikit-learn/scikit-learn/blob/36958fb24/sklearn/model_selection/_validation.py#L381), `cross_val_score` is just a wrapper for `cross_validate` that only returns the `['test_scores']`. However, that setting returns estimators for *each* split. I'm looking for just one.
+
+How about I fit on train as normal, `cross_val_score` to obtain training score, and then test on held out data. From source code, this uses a clone of the estimator to make separate fit and predicts for evaluation, so I can still log the original fitted `clf` object, even after running CV, without worrying about the estimators changing.
 
 ## Other deployment scenarios
 
