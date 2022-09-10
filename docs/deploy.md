@@ -63,7 +63,7 @@ Worked earlier on the laptop, but even then it took 10+ seconds. At this point t
 
 Maybe because I'm loading a canada server from asia?
 
-I should try running the frontend on amazon EC2.
+I should try running the frontend on amazon EC2. *Passed in 4.84 seconds*. Welp. Try restarting my computer maybe, who knows.
 
 ## Other deployment scenarios
 

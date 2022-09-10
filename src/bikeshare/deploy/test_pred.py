@@ -32,7 +32,7 @@ input_dict = {
     "to_station_name": "Church St  / Wood St",
     "user_type": "Member",
 }
-url = 'http://localhost:9393/predict'
+url = 'http://0.0.0.0:9393/predict'
 response = requests.put(url, json=input_dict, timeout=90)
 
 print(response.json())

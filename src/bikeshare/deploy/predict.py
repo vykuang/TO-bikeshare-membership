@@ -9,7 +9,7 @@ from datetime import datetime
 import mlflow.pyfunc
 from flask import Flask, jsonify, request
 from mlflow.tracking import MlflowClient
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 

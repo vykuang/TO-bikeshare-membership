@@ -1,5 +1,16 @@
 # Working with AWS
 
+## EC2
+
+With `awscli` installed, this is handy to list all public IPs of our instances:
+
+```bash
+aws ec2 describe-instances \
+  --filter "Name=instance-state-name,Values=running" \
+  --query "Reservations[*].Instances[*].[PublicIpAddress, Tags[?Key=='Name'].Value|[0]]" \
+  --output text
+```
+
 ## S3
 
 S3 is object store, and uses `key-value` pairs and buckets to identify and manage objects. No directory hierarchy, but can be built into the `key` value of object with slash `/`
