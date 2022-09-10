@@ -1,7 +1,7 @@
 from prefect import flow, get_run_logger, task
 from sklearn.model_selection import train_test_split
 
-from .preprocess import dump_pickle, preprocess, read_df
+from .preprocess import preprocess, read_df
 from .registry import register_model
 from .trials import model_search
 
@@ -14,11 +14,6 @@ def read_data_task(path: str):
 @task
 def preprocess_task(df_bikes):
     return preprocess(df_bikes)
-
-
-@task
-def dump_pickle_task(obj, filename):
-    dump_pickle(obj, filename)
 
 
 @task
@@ -36,8 +31,7 @@ def register_model_task():
 
 @flow()
 def to_bikes_flow(data_path: str, num_trials: int):
-    """Deployment flow for training the TO-bikeshare-classifier
-    """
+    """Deployment flow for training the TO-bikeshare-classifier"""
     logger = get_run_logger()
 
     # Path.mkdir(dest_path, exist_ok=True)
@@ -57,10 +51,6 @@ def to_bikes_flow(data_path: str, num_trials: int):
     )
     logger.info(f"Train size: {len(train)}\tTest size: {len(test)}")
 
-    # dump_pickle_task(train, Path(dest_path / "train.pkl"))
-    # dump_pickle_task(test, Path(dest_path / "test.pkl"))
-    # logger.info(f"Saved train.pkl and test.pkl in {dest_path}")
-
     trials = model_search_task(train=train, test=test, num_trials=num_trials)
     if trials:
         for trial in trials:
@@ -75,7 +65,6 @@ def to_bikes_flow(data_path: str, num_trials: int):
 if __name__ == "__main__":
     # for testing
     to_bikes_flow(
-        data_path="/home/kohada/to-bikes/data/bikeshare-2017-q1.csv",
-        # dest_path="/home/kohada/to-bikes/data/output/",
+        data_path="sample-bikeshare.csv",
         num_trials=5,
     )

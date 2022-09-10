@@ -4,33 +4,37 @@ Retrieves and runs the latest version of the registered model
 import logging
 import os
 import sys
-import pandas as pd
 from datetime import datetime
+
 import mlflow.pyfunc
+import pandas as pd
 from flask import Flask, jsonify, request
 from mlflow.tracking import MlflowClient
+
 # from dotenv import load_dotenv
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
+
 def preprocess_json(ride: dict) -> dict:
     """Preprocess the json input as dict"""
     logging.info("Preprocessing request")
-    
+
     features = {}
     date_fmt = """%d/%m/%Y %H:%M"""
-    dt_start = datetime.strptime(ride['trip_start_time'], date_fmt)
-    dt_end = datetime.strptime(ride['trip_stop_time'], date_fmt)
-    features['day_of_week'] = dt_start.weekday()
-    features['start_hour'] = dt_start.hour
-    features['end_hour'] = dt_end.hour
-    features['target'] = ride['user_type'] == "Member"
-    features['from_station_id'] = ride['from_station_id']
-    features['to_station_id'] = ride['to_station_id']
-    features['trip_duration_seconds'] = ride['trip_duration_seconds']
+    dt_start = datetime.strptime(ride["trip_start_time"], date_fmt)
+    dt_end = datetime.strptime(ride["trip_stop_time"], date_fmt)
+    features["day_of_week"] = dt_start.weekday()
+    features["start_hour"] = dt_start.hour
+    features["end_hour"] = dt_end.hour
+    features["target"] = ride["user_type"] == "Member"
+    features["from_station_id"] = ride["from_station_id"]
+    features["to_station_id"] = ride["to_station_id"]
+    features["trip_duration_seconds"] = ride["trip_duration_seconds"]
 
-    logging.debug(f'Num features returned: {len(features)}')
+    logging.debug(f"Num features returned: {len(features)}")
     return features
+
 
 def preprocess(df_bikes: pd.DataFrame) -> pd.DataFrame:
     """Preprocesses the bikeshare data
@@ -74,6 +78,7 @@ def preprocess(df_bikes: pd.DataFrame) -> pd.DataFrame:
     df_bikes = df_bikes.drop(drops, axis=1)
     return df_bikes
 
+
 def retrieve() -> mlflow.pyfunc.PyFuncModel:
     """Retrieves and returns the latest version of the registered model"""
     logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
@@ -85,11 +90,13 @@ def retrieve() -> mlflow.pyfunc.PyFuncModel:
     # search string requires quotation marks around everything
     # only one search expression in 1.26
     mv_search = client.search_model_versions(f"name='{MLFLOW_REGISTERED_MODEL}'")
-    logging.info('MLflow client created')
+    logging.info("MLflow client created")
 
     for mv in mv_search:
         # pprint(dict(mv), indent=4)
-        logging.info(f"version: {mv.version}\nStage: {mv.current_stage}\nSource: {mv.source}")
+        logging.info(
+            f"version: {mv.version}\nStage: {mv.current_stage}\nSource: {mv.source}"
+        )
 
     model_uris = [mv.source for mv in mv_search if mv.current_stage == "Production"]
     logging.info(model_uris)
@@ -112,16 +119,20 @@ def predict(model, features):
     # casting as python native bool allows serialization (to json)
     return bool(pred)
 
+
 def save_to_db(result: dict) -> None:
     """Save prediction metadata to a DB for batch monitoring"""
     pass
 
+
 def send_to_evidently(result: dict) -> None:
     """Send online prediction metadata to Evidently for realtime monitoring"""
-    
+
     pass
 
+
 app = Flask("bikeshare-membership-prediction")
+
 
 @app.route("/predict", methods=["PUT"])
 def predict_endpoint():
@@ -139,7 +150,7 @@ def predict_endpoint():
     rows.append(ride)
     # I should .set_index('trip_id'), but the trained model pipeline left it in
     # and so I need to here as well, lest ValueError Missing column be raised
-    df_bike = pd.DataFrame.from_dict(rows, orient='columns')
+    df_bike = pd.DataFrame.from_dict(rows, orient="columns")
     features = preprocess(df_bike)
     logging.info("Preprocessed input data")
 
@@ -151,10 +162,9 @@ def predict_endpoint():
         "predicted_membership": pred,
         "input_data": ride,
         # need custom pyfunc wrapper to include predict_proba
-        # "probability": proba, 
+        # "probability": proba,
         # without .to_json(), jsonify will raise non serializable error
         "model_meta": model.metadata.to_json(),
-        
     }
     logging.info("Returning result")
 
@@ -163,10 +173,10 @@ def predict_endpoint():
 
     return jsonify(result)
 
+
 if __name__ == "__main__":
     app.run(
         debug=True,
         host="0.0.0.0",
         port=9393,
     )
-

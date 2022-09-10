@@ -11,10 +11,11 @@ from hyperopt.pyll import scope
 from sklearn.compose import make_column_transformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder
-from sklearn.metrics import roc_auc_score
+
 
 def load_pickle(path: Path):
     with open(path, "rb") as f_in:
@@ -56,13 +57,18 @@ def model_search(train, test, num_trials):
             clf.fit(X_train, y_train)
 
             cv = StratifiedKFold()
-            scores_train = cross_val_score(clf, X_train, y_train, 
-                                        cv=cv, scoring="roc_auc", n_jobs=-1,
-                                    )
+            scores_train = cross_val_score(
+                clf,
+                X_train,
+                y_train,
+                cv=cv,
+                scoring="roc_auc",
+                n_jobs=-1,
+            )
             roc_auc_train = np.average(scores_train)
             mlflow.log_metric("roc_auc_train", roc_auc_train)
 
-            y_preds = clf.predict_log_proba(X_test)[:,1]
+            y_preds = clf.predict_log_proba(X_test)[:, 1]
             roc_auc = np.average(roc_auc_score(y_test, y_preds))
 
             mlflow.log_metric("roc_auc", roc_auc)
