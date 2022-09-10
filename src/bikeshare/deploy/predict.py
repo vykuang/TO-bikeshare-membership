@@ -109,8 +109,17 @@ def predict(model, features):
     as well as the associated probability
     """
     pred = model.predict(features)
+    # casting as python native bool allows serialization (to json)
     return bool(pred)
 
+def save_to_db(result: dict) -> None:
+    """Save prediction metadata to a DB for batch monitoring"""
+    pass
+
+def send_to_evidently(result: dict) -> None:
+    """Send online prediction metadata to Evidently for realtime monitoring"""
+    
+    pass
 
 app = Flask("bikeshare-membership-prediction")
 
@@ -125,9 +134,12 @@ def predict_endpoint():
     ride = request.get_json()
     logging.info("Received PUT request")
 
+    # appending dict to row allows pd.DataFrame.from_dict(orient='columns')
     rows = []
     rows.append(ride)
-    df_bike = pd.DataFrame.from_dict(rows, orient='columns').set_index('trip_id')
+    # I should .set_index('trip_id'), but the trained model pipeline left it in
+    # and so I need to here as well, lest ValueError Missing column be raised
+    df_bike = pd.DataFrame.from_dict(rows, orient='columns')
     features = preprocess(df_bike)
     logging.info("Preprocessed input data")
 
@@ -137,11 +149,17 @@ def predict_endpoint():
     pred = predict(model, features)
     result = {
         "predicted_membership": pred,
+        "input_data": ride,
         # need custom pyfunc wrapper to include predict_proba
         # "probability": proba, 
-        "model_version": model.metadata,
+        # without .to_json(), jsonify will raise non serializable error
+        "model_meta": model.metadata.to_json(),
+        
     }
     logging.info("Returning result")
+
+    save_to_db(result.copy())
+    send_to_evidently(result.copy())
 
     return jsonify(result)
 

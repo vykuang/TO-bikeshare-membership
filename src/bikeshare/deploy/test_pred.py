@@ -6,7 +6,7 @@ trip_id,trip_start_time,trip_stop_time,trip_duration_seconds,from_station_id,fro
 
 """
 import requests
-
+import sys
 
 # input = pd.read_csv('test-2017.csv')
 # input_json = input.to_json()
@@ -32,7 +32,9 @@ input_dict = {
     "to_station_name": "Church St  / Wood St",
     "user_type": "Member",
 }
-url = 'http://0.0.0.0:9393/predict'
+
+host_ip = str(sys.argv[1])
+url = f'http://{host_ip}:9393/predict'
 response = requests.put(url, json=input_dict, timeout=90)
 
 print(response.json())

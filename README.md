@@ -33,14 +33,14 @@ Can we predict whether the user is a member (annual pass) or casual (short term 
 	* Tracking server can be local or remote server
 	* Backend store can be local or remote database
 	* Artifact store can be local filesystem or remote bucket
-3. Set up Prefect 
+3. Set up Prefect
 	* Scheduler can be local, remote, or Prefect Cloud (hosted by Prefect)
 	* storage can be local or remote bucket; this is where Prefect stores the deployment flow codes to be run by the agent
 	* Agent can be local instance or remote, as long as they have access to storage and prefect scheduling server
 4. (Optional) Set up AWS
 	* S3 for raw data storage, MLflow artifact store, and Prefect deployment code storage
 	* RDS for MLflow backend store, and potentially prefect if running a remote instance not hosted by Prefect Cloud
-	* EC2 to run MLflow server, and potentially prefect.
+	* EC2 to run MLflow server, and optionally prefect and web service.
 	* Note that MLflow also has options for third-party hosted servers with free tier usage options, e.g. Neptune.
 
 ### environment variables
@@ -69,14 +69,17 @@ Once set up, the deployment container will expose an URL endpoint for users to `
 Current implementation can accept one trip data per `PUT` request. The accompanying JSON keys should match the columns of the training data:
 
 ```json
-{
-    'trip_id': 1,
-    'from_station_id': 123,
-    'from_station_name': "abc",
-    'to_station_id': 234,
-    'to_station_name': "xyz",
-    'trip_duration_seconds': 100,
-} 
+input_dict = {
+    "trip_id": 712382,
+    "trip_start_time": "1/1/2017 0:00",
+    "trip_stop_time": "1/1/2017 0:03",
+    "trip_duration_seconds": 223,
+    "from_station_id": 7051,
+    "from_station_name": "Wellesley St E / Yonge St Green P",
+    "to_station_id": 7089,
+    "to_station_name": "Church St  / Wood St",
+    "user_type": "Member",
+}
 ```
 
 ## Future Development

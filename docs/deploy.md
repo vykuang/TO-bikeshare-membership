@@ -65,6 +65,108 @@ Maybe because I'm loading a canada server from asia?
 
 I should try running the frontend on amazon EC2. *Passed in 4.84 seconds*. Welp. Try restarting my computer maybe, who knows.
 
+Restart allowed model loading in 50 seconds. That's about 49 more than I'm willing to spend.
+
+### Launching a new EC2 instance for our deployment
+
+Let's run the docker on an EC2 to avoid the unloadable object issue.
+
+#### Set up EC2 instance
+
+* Make sure IAM *role* (not user) attached has access to our MLflow artifact store.
+* Forward the ${MODEL_PORT}
+* S3 Policy attached to role must apply to the bucket *as well as all objects within the bucket*, otherwise we'll be able to access the bucket, but not download the objects, i.e. our models.
+    * Object ARN to apply to all objects inside bucket: `arn:aws:s3:::<bucket_name>/*`
+
+#### Setting up instance environment
+
+* git
+* pipenv
+* pyenv
+* docker
+
+1. docker
+
+    ```bash
+    # in amazon linux, yum replaces apt
+    sudo yum update
+
+    sudo amazon-linux-extras install docker
+    sudo service docker start
+    # For both cases:
+    # add current user to `docker` group to run docker without sudo
+    # make group
+    sudo groupadd docker
+    # add user
+    sudo usermod -aG docker $USER
+    # update changes
+    newgrp docker
+    # try
+    docker run hello-world
+    ```
+
+2. docker compose - [see offical docs](https://docs.docker.com/compose/install/linux/#install-the-plugin-manually).
+
+    ```bash
+    # install manually
+    DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+
+    mkdir -p $DOCKER_CONFIG/cli-plugins
+
+    curl -SL https://github.com/docker/compose/releases/download/v2.10.2/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+
+    chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+
+    # test
+    docker compose version
+    ```
+
+3. git
+
+    ```bash
+    sudo yum install git
+    ```
+
+4. Clone our project repo, and run the docker compose file with `docker compose up -d --build`
+
+    Can stop here if we only want to deploy our docker container.
+
+    If we want to develop on this instance, continue below.
+
+5. (Optional) Pyenv, pipenv
+    Follow [offical pyenv docs](https://github.com/pyenv/pyenv#installation) for installation
+
+    ```bash
+    git clone https://github.com/pyenv/pyenv.git ~/.pyenv
+
+    # add to .bashrc
+    echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+    echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+    echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+
+    # add to bash_profile
+    echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
+    echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
+    echo 'eval "$(pyenv init -)"' >> ~/.bash_profile
+
+    # restart shell
+    exec "$SHELL"
+
+    # Python build dependencies; needed to install new python versions
+    sudo yum install gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz-devel
+
+    # install python
+    pyenv install 3.9.12
+
+    # upgrade pip
+    pip install --upgrade pip
+
+    # pipenv
+    pip install --user pipenv
+    ```
+
+    Development on this instance would also necessitate adding github credentials to enable push. Install github CLI and configure a security token.
+
 ## Other deployment scenarios
 
 Instead of POSTing the actual trip data as input to the web service...
