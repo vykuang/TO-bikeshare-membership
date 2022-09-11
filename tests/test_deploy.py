@@ -1,6 +1,6 @@
 import pytest
 
-from bikeshare.deploy import predict
+from bikeshare.deploy.predict_service import predict
 
 @pytest.mark.timeout(30)
 @pytest.mark.deploy

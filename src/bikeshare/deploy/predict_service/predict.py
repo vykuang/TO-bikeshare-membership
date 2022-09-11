@@ -10,7 +10,6 @@ import mlflow.pyfunc
 import pandas as pd
 from flask import Flask, jsonify, request
 from mlflow.tracking import MlflowClient
-
 from pymongo import MongoClient
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -20,6 +19,7 @@ mongo_client = MongoClient(MONGODB_URI)
 db = mongo_client.get_database("prediction_service")
 collection = db.get_collection("data")
 logging.info("MongoDB connection established")
+
 
 def preprocess_json(ride: dict) -> dict:
     """Preprocess the json input as dict"""
@@ -39,6 +39,7 @@ def preprocess_json(ride: dict) -> dict:
 
     logging.debug(f"Num features returned: {len(features)}")
     return features
+
 
 def json_to_df(ride: dict) -> pd.DataFrame:
     # appending dict to row allows pd.DataFrame.from_dict(orient='columns')
@@ -81,6 +82,7 @@ def preprocess(df_bikes: pd.DataFrame) -> pd.DataFrame:
     )
     df_bikes["target"] = df_bikes["user_type"].apply(lambda type: type == "Member")
     drops = [
+        "trip_id",
         "trip_start_time",
         "trip_stop_time",
         "from_station_name",

@@ -1,28 +1,49 @@
 version: '3'
 
 services:
-  deploy-app:
+  predict:
     image: to-bikes/deploy-app:v0
     build:
-      context: .  # same dir as yaml
-      dockerfile: deploy.Dockerfile
+      context: predict_service  # same dir as yaml
+      dockerfile: predict_service.Dockerfile
       # args:
       #   - MODEL_PORT=9393
     depends_on:
       - mongo
-    env_file: # sets my AWS_PROFILE to know which creds to use
+    env_file: 
       - .env
-    volumes: # :ro for read only; only used if not running on EC2
-      - type: bind
-        source: ~/.aws/
-        target: /root/.aws/
-        read_only: true
+    environment: # uses the service name to find the mongo container host IP
+      MONGODB_URI: "mongodb://mongo.:27017/"
+    # volume for local dev only; EC2 deployment does not need AWS cred
+    # volumes: # :ro for read only; only used if not running on EC2
+    #   - type: bind
+    #     source: ~/.aws/
+    #     target: /root/.aws/
+    #     read_only: true
     ports:
       - "9393:9393"
     networks:
       - back-tier
     # same as Dockerfile currently, but this overrides that, if different.
     # command: [ "0.0.0.0:${MODEL_PORT}", "predict:app" ] 
+
+  prefect-agent:
+    image: to-bikes/prefect-agent:v0
+    build:
+      context: prefect_agent
+      dockerfile: agent.Dockerfile
+    env_file: 
+      - .env
+    # volume for local dev only; EC2 deployment does not need AWS cred
+    # volumes: # :ro for read only
+    #   - type: bind
+    #     source: ~/.aws/
+    #     target: /root/.aws
+    #     read_only: true
+    # same as Dockerfile currently, but this overrides that, if different.
+    command: [ "$PREFECT_WORK_QUEUE" ] 
+    networks:
+      - back-tier
 
   mongo:
     image: mongo
@@ -34,7 +55,7 @@ services:
       - back-tier
         
 volumes:
-  mongo_data: {}
+  mongo_data: {}    
 
 networks:
   back-tier:

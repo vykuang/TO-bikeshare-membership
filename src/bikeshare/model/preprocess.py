@@ -12,12 +12,12 @@ def read_df(path: str):
     return df
 
 
-def dump_pickle(obj, filename):
+def dump_pickle(obj, filename) -> None:
     with open(filename, "wb") as f_out:
         pickle.dump(obj, f_out)
 
 
-def preprocess(df_bikes: pd.DataFrame):
+def preprocess(df_bikes: pd.DataFrame) -> pd.DataFrame:
     """Preprocesses the bikeshare data
 
     Converts the datetimes from str obj to datetime objects, and extracts
@@ -48,6 +48,7 @@ def preprocess(df_bikes: pd.DataFrame):
     )
     df_bikes["target"] = df_bikes["user_type"].apply(lambda type: type == "Member")
     drops = [
+        "trip_id",
         "trip_start_time",
         "trip_stop_time",
         "from_station_name",
