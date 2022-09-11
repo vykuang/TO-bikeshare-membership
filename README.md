@@ -40,16 +40,40 @@ Can we predict whether the user is a member (annual pass) or casual (short term 
 4. (Optional) Set up AWS
 	* S3 for raw data storage, MLflow artifact store, and Prefect deployment code storage
 	* RDS for MLflow backend store, and potentially prefect if running a remote instance not hosted by Prefect Cloud
-	* EC2 to run MLflow server, and optionally prefect and web service.
+	* EC2 to run MLflow server, web service docker, and optionally prefect server.
 	* Note that MLflow also has options for third-party hosted servers with free tier usage options, e.g. Neptune.
 
 ### environment variables
 
 These are the environment variables required by prefect deployment flows, prefect agent, and the ML deployment server
 
-<list of env vars to set>
+```
+# MLflow
+MLFLOW_TRACKING_URI=
+MLFLOW_EXP_NAME='TO-bikeshare-classifier'
+MLFLOW_REGISTERED_MODEL='TO-bikeshare-clf'
+
+# profile to access MLflow remote artifact bucket
+AWS_PROFILE=mlflow-storage
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+
+# Prefect
+PREFECT_API_URL=https://api.prefect.cloud/api/accounts/.../
+PREFECT_API_KEY=pnu_...
+PREFECT_S3_BUCKET=
+PREFECT_WORK_QUEUE=TO-bikes-clf
+S3_BLOCK_NAME='to-bikes-flows'
+
+# profile to access Prefect S3 storage
+AWS_PROFILE=prefect-storage
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+```
 	
 To reproduce the project, the cloud resources are not required; every component of the project can be run locally. Both MLflow and Prefect have the option to host local servers, and the backend store database can point to a lightweight SQLite `.db` file. Simply change the environment variables so that they point to a valid local resource.
+
+
 
 ## Modelling
 
@@ -80,10 +104,12 @@ input_dict = {
 }
 ```
 
+Requester should receive a `json` containing the prediction and metadata about the model that made the prediction
+
 ## Future Development
 
 * Handling datasets from different years, not just 2017, taking into account the different column names and data fields
-* Adding a dummy classifier to serve as baseline comparison.I.e. If target is 95% positive, the dummy classifier should predict positive 95% of the time. Will our trained classifier perform better?
+* Adding a dummy classifier to serve as baseline comparison. I.e. If target is 95% positive, the dummy classifier should predict positive 95% of the time. Will our trained classifier perform better?
 * Adding seasonality and year as features
 * Complete script to include fetching data from TO open data as part of the pipeline
     * prefect-agent assumes that all source data has been neatly stored on `to-bikeshare-data` bucket in `/source/<year>/<quarter>.csv` format

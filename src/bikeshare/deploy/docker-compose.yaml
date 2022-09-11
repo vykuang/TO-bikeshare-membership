@@ -8,15 +8,33 @@ services:
       dockerfile: deploy.Dockerfile
       # args:
       #   - MODEL_PORT=9393
+    depends_on:
+      - mongo
     env_file: # sets my AWS_PROFILE to know which creds to use
       - .env
-    volumes: # :ro for read only
+    volumes: # :ro for read only; only used if not running on EC2
       - type: bind
         source: ~/.aws/
-        target: /root/.aws
+        target: /root/.aws/
         read_only: true
     ports:
       - "9393:9393"
+    networks:
+      - back-tier
     # same as Dockerfile currently, but this overrides that, if different.
     # command: [ "0.0.0.0:${MODEL_PORT}", "predict:app" ] 
+
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - back-tier
         
+volumes:
+  mongo_data: {}
+
+networks:
+  back-tier:

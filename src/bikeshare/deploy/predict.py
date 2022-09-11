@@ -11,10 +11,15 @@ import pandas as pd
 from flask import Flask, jsonify, request
 from mlflow.tracking import MlflowClient
 
-# from dotenv import load_dotenv
+from pymongo import MongoClient
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://127.0.0.1:27017")
+mongo_client = MongoClient(MONGODB_URI)
+db = mongo_client.get_database("prediction_service")
+collection = db.get_collection("data")
+logging.info("MongoDB connection established")
 
 def preprocess_json(ride: dict) -> dict:
     """Preprocess the json input as dict"""
@@ -34,6 +39,15 @@ def preprocess_json(ride: dict) -> dict:
 
     logging.debug(f"Num features returned: {len(features)}")
     return features
+
+def json_to_df(ride: dict) -> pd.DataFrame:
+    # appending dict to row allows pd.DataFrame.from_dict(orient='columns')
+    rows = []
+    rows.append(ride)
+    # I should .set_index('trip_id'), but the trained model pipeline left it in
+    # and so I need to here as well, lest ValueError Missing column be raised
+    df_bike = pd.DataFrame.from_dict(rows, orient="columns")
+    return df_bike
 
 
 def preprocess(df_bikes: pd.DataFrame) -> pd.DataFrame:
@@ -81,9 +95,10 @@ def preprocess(df_bikes: pd.DataFrame) -> pd.DataFrame:
 
 def retrieve() -> mlflow.pyfunc.PyFuncModel:
     """Retrieves and returns the latest version of the registered model"""
-    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     logging.debug(__name__)
-    MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://13.215.46.159:5000/")
+    # defaults to ./mlruns if empty
+    MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "")
     MLFLOW_REGISTERED_MODEL = os.getenv("MLFLOW_REGISTERED_MODEL", "TO-bikeshare-clf")
 
     client = MlflowClient(tracking_uri=MLFLOW_TRACKING_URI)
@@ -111,18 +126,17 @@ def retrieve() -> mlflow.pyfunc.PyFuncModel:
     return model
 
 
-def predict(model, features):
+def predict(model: mlflow.pyfunc.PyFuncModel, features: pd.DataFrame) -> bool:
     """Given model and bikeshare trip data, return the predicted membership,
     as well as the associated probability
     """
     pred = model.predict(features)
-    # casting as python native bool allows serialization (to json)
     return bool(pred)
 
 
 def save_to_db(result: dict) -> None:
     """Save prediction metadata to a DB for batch monitoring"""
-    pass
+    collection.insert_one(result)
 
 
 def send_to_evidently(result: dict) -> None:
@@ -130,6 +144,12 @@ def send_to_evidently(result: dict) -> None:
 
     pass
 
+
+# retrieve model only if first run?
+AWS_PROFILE = os.getenv("AWS_PROFILE", "default")
+logging.info(f"AWS_PROFILE set to: {AWS_PROFILE}")
+model = retrieve()
+logging.info("Model retrieved from artifact store")
 
 app = Flask("bikeshare-membership-prediction")
 
@@ -145,18 +165,18 @@ def predict_endpoint():
     ride = request.get_json()
     logging.info("Received PUT request")
 
-    # appending dict to row allows pd.DataFrame.from_dict(orient='columns')
-    rows = []
-    rows.append(ride)
-    # I should .set_index('trip_id'), but the trained model pipeline left it in
-    # and so I need to here as well, lest ValueError Missing column be raised
-    df_bike = pd.DataFrame.from_dict(rows, orient="columns")
+    df_bike = json_to_df(ride)
+    logging.info("Converted json to dataframe")
+
     features = preprocess(df_bike)
     logging.info("Preprocessed input data")
 
-    model = retrieve()
-    logging.info("Model retrieved from artifact store")
+    # retrieve only on server startup, not every time a request is made
+    # to minimize load on S3 and reduce response time
+    # model = retrieve()
 
+    # model is global var.
+    # casting as python native bool allows serialization (to json)
     pred = predict(model, features)
     result = {
         "predicted_membership": pred,

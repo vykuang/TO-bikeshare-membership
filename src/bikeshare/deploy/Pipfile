@@ -9,6 +9,7 @@ flask = "*"
 mlflow = "~=1.26"
 gunicorn = "*"
 boto3 = "*"
+pymongo = "*"
 
 [dev-packages]
 requests = "*"
