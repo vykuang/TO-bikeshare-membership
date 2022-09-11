@@ -35,13 +35,36 @@ services:
     env_file: 
       - .env
     # volume for local dev only; EC2 deployment does not need AWS cred
-    # volumes: # :ro for read only
-    #   - type: bind
-    #     source: ~/.aws/
-    #     target: /root/.aws
-    #     read_only: true
+    volumes: # :ro for read only
+      - type: bind
+        source: ~/.aws/
+        target: /root/.aws
+        read_only: true
     # same as Dockerfile currently, but this overrides that, if different.
     command: [ "$PREFECT_WORK_QUEUE" ] 
+    networks:
+      - back-tier
+
+  monitor-agent:
+    image: to-bikes/monitor-agent:v0
+    build:
+      context: monitor
+      dockerfile: batch_monitor.Dockerfile
+    depends_on:
+      - mongo
+    env_file: 
+      - .env
+    environment:
+      AWS_PROFILE: "default"
+      MONGODB_URI: "mongodb://mongo.:27017/"
+    # volume for local dev only; EC2 deployment does not need AWS cred
+    volumes: # :ro for read only
+      - type: bind
+        source: ~/.aws/
+        target: /root/.aws
+        read_only: true
+    # same as Dockerfile currently, but this overrides that, if different.
+    command: [ "$PREFECT_MONITOR_QUEUE" ] 
     networks:
       - back-tier
 

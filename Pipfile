@@ -13,6 +13,8 @@ hyperopt = "*"
 boto3 = "*"
 prefect = "~=2.3"
 s3fs = "*"
+evidently = "*"
+pymongo = "*"
 
 [dev-packages]
 black = "*"

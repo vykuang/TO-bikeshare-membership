@@ -1,0 +1,18 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "*"
+pandas = "*"
+evidently = "*"
+boto3 = "*"
+s3fs = "*"
+prefect = "~=2.3"
+pymongo = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"

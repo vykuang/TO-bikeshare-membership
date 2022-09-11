@@ -1,0 +1,52 @@
+###
+### A complete description of a Prefect Deployment for flow 'batch-analyze'
+###
+name: to-bikes-clf-monitor-s3
+description: null
+version: v0
+# The work queue that will handle this deployment's runs
+work_queue_name: TO-bikes-clf-monitor
+tags:
+- to-bikes
+parameters: {}
+schedule:
+  cron: 0 0 1 * *
+  timezone: null
+  day_or: true
+infra_overrides: {}
+
+###
+### DO NOT EDIT BELOW THIS LINE
+###
+flow_name: batch-analyze
+manifest_path: null
+infrastructure:
+  type: process
+  env: {}
+  labels: {}
+  name: null
+  command:
+  - python
+  - -m
+  - prefect.engine
+  stream_output: true
+  _block_document_id: 4a8e0959-0ca0-4e40-bd20-d0aa92488087
+  _block_document_name: anonymous-863e092b-bb52-4341-b31e-d575fa63d679
+  _is_anonymous: true
+  _block_type_slug: process
+storage:
+  bucket_path: prefect-storage-1212
+  aws_access_key_id: '**********'
+  aws_secret_access_key: '**********'
+  _block_document_id: 994699e9-fe0e-45bc-89a7-54f7d3f70d3f
+  _block_document_name: to-bikes-flows
+  _is_anonymous: false
+  _block_type_slug: s3
+path: to-bikes-clf-monitor/
+entrypoint: batch_monitor.py:batch_analyze
+parameter_openapi_schema:
+  title: Parameters
+  type: object
+  properties: {}
+  required: null
+  definitions: null

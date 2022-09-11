@@ -15,20 +15,20 @@ Can we predict whether the user is a member (annual pass) or casual (short term 
 
 ## Architecture
 
-[Insert architecture diagram here]
-
 * `scikit-learn` classifiers train on source data
 * `MLFlow` tracks experiment results
 * `Prefect` orchestrates the training pipeline; Prefect Cloud free tier is used as the orchestration server, and a dockerized agent executes the deployed flows
 * `AWS S3` stores the source data, MLflow model artifacts, and orchestration backend database
 * `AWS EC2` instance hosts the remote MLflow tracking server and dockerized prefect agent
 * `AWS RDS` postgres instance hosts the remote MLflow backend store; contains the run metrics and metadata for all experiments from the tracking server
+* `Mongo DB` stores model performance metrics for monitoring
+* `Docker` containerizes the services when possible, e.g. prefect-agent, mongo, predict
 
 ## Running this thing
 
 ### Set up
 
-1. Use the `sample-bikeshare.csv` as our source data.
+1. Use the `sample/sample-bikeshare.csv` as our source data, and load to your storage of choice
 2. Set up MLflow
 	* Tracking server can be local or remote server
 	* Backend store can be local or remote database
@@ -63,26 +63,85 @@ PREFECT_API_URL=https://api.prefect.cloud/api/accounts/.../
 PREFECT_API_KEY=pnu_...
 PREFECT_S3_BUCKET=
 PREFECT_WORK_QUEUE=TO-bikes-clf
+PREFECT_MONITOR_QUEUE=TO-bikes-clf-monitor
 S3_BLOCK_NAME='to-bikes-flows'
+SOURCE_DATA_BUCKET=
 
-# profile to access Prefect S3 storage
+# profile to access Prefect S3 storage and raw data bucket
 AWS_PROFILE=prefect-storage
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 ```
-	
-To reproduce the project, the cloud resources are not required; every component of the project can be run locally. Both MLflow and Prefect have the option to host local servers, and the backend store database can point to a lightweight SQLite `.db` file. Simply change the environment variables so that they point to a valid local resource.
 
+The `.env` file should be in same directory as the `docker-compose.yaml`
 
+To reproduce the project, the cloud resources are not required; every component of the project can be run locally. Both MLflow and Prefect have the option to host local servers, and the backend store database can point to a lightweight SQLite `.db` file. Change the environment variables so that they point to a valid local resource.
 
-## Modelling
+### Running
 
+On an EC2 instance with sufficient access to the various S3 buckets, clone this repo:
 
-## Experiment Tracking
+```bash
+git clone https://github.com/vykuang/TO-bikeshare-membership.git to-bikes
+```
+
+Create virtual env:
+
+```bash
+cd to-bikes; 
+pipenv install
+```
+
+CD into the deployment folder. Configure the `.env` file
+
+```bash
+cd src/bikeshare/deploy/;
+touch .env
+```
+
+Initiate the docker containers
+
+```bash
+cd to-bikes/src/bikeshare/deploy/
+docker compose up --build
+```
+
+This will launch four services:
+
+1. mongo to store model performance metrics
+2. predict to process user inputs and return prediction
+3. prefect-agent to train and register model
+4. monitor-agent to batch-analyze the data in mongo
+
+Since there will be no model initially, manually run a training flow. Note that the following steps will require prefect to be setup:
+
+From `deploy/` directory:
+
+```bash
+cd ../model
+bash ./flow_deploy.sh
+```
+
+This creates a prefect deployment yaml. Edit the parameters so that it points to the currect directory for your `sample-bikeshare.csv`, e.g. the S3 URI.
+
+Apply and run the flow after editing the .yaml:
+
+```bash
+bash ./flow_apply.sh
+bash ./flow_run.sh
+```
+
+## Modelling and Experiment Tracking
+
+[Notes on EDA and MLflow](https://github.com/vykuang/TO-bikeshare-membership/blob/main/docs/mlflow.md)
 
 ## Orchestration
 
+[Notes on using Prefect](https://github.com/vykuang/TO-bikeshare-membership/blob/main/docs/prefect.md)
+
 ## Deployment
+
+[Notes on web service deployment](https://github.com/vykuang/TO-bikeshare-membership/blob/main/docs/deploy.md)
 
 ## using the service
 
@@ -106,9 +165,20 @@ input_dict = {
 
 Requester should receive a `json` containing the prediction and metadata about the model that made the prediction
 
+### Test
+
+After model has been registered and all docker services are running, use the `test_pred.py` inside `deploy/` to mimic test request:
+
+```bash
+python test_predict.py localhost
+```
+
+Note that depending on where you run the command, and whether port forwarding was done, the `localhost` arg may vary
+
 ## Future Development
 
 * Handling datasets from different years, not just 2017, taking into account the different column names and data fields
+* Outlier detection on dataset preprocessing
 * Adding a dummy classifier to serve as baseline comparison. I.e. If target is 95% positive, the dummy classifier should predict positive 95% of the time. Will our trained classifier perform better?
 * Adding seasonality and year as features
 * Complete script to include fetching data from TO open data as part of the pipeline
@@ -116,4 +186,4 @@ Requester should receive a `json` containing the prediction and metadata about t
     * `fetch` should pull from TO open data and push to cloud bucket in that format.
 * Add multiple model types in the hyperopt search space; currently using only random forest
 * When loading model via MLflow's artifact store, the default model only has `.predict()`. [According to this issues page](https://github.com/mlflow/mlflow/issues/694), a custom wrapper is required if we want `.predict_proba()` as provided by the original sklearn model.
-
+* Using Terraform for IaC

@@ -1,6 +1,7 @@
 # data files
 *.parquet
-*.csv
+b*.csv
+t*.csv
 pref*.txt
 *.doc
 *.docx

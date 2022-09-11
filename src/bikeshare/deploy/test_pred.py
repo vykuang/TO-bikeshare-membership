@@ -25,7 +25,7 @@ input_dict = {
     "trip_id": 712382,
     "trip_start_time": "1/1/2017 0:00",
     "trip_stop_time": "1/1/2017 0:03",
-    "trip_duration_seconds": 1130,
+    "trip_duration_seconds": 2130,
     "from_station_id": 7051,
     "from_station_name": "Wellesley St E / Yonge St Green P",
     "to_station_id": 7089,
@@ -35,6 +35,6 @@ input_dict = {
 
 host_ip = str(sys.argv[1])
 url = f"http://{host_ip}:9393/predict"
-response = requests.put(url, json=input_dict, timeout=90)
+response = requests.put(url, json=input_dict, timeout=5)
 
 print(response.json())
